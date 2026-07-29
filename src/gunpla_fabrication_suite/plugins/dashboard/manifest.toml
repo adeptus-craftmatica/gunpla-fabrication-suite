@@ -1,0 +1,14 @@
+id = "com.adeptuscraftmatica.gfs.dashboard"
+name = "Dashboard"
+version = "1.0.0"
+api_version = "1"
+entry_point = "plugin:DashboardPlugin"
+description = "Workshop overview dashboard, assembled from widgets contributed by other plugins."
+author = "Adeptus Craftmatica"
+
+dependencies = []
+optional_dependencies = []
+
+permissions = [
+    "notifications.publish",
+]

@@ -1,0 +1,11 @@
+id = "test.plugin.broken"
+name = "Test Plugin Broken"
+version = "1.0.0"
+api_version = "1"
+entry_point = "plugin:BrokenPlugin"
+description = "A fixture plugin that always fails during registration."
+author = "Test Fixture"
+
+dependencies = []
+optional_dependencies = []
+permissions = []

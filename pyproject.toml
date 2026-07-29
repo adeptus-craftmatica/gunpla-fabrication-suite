@@ -1,0 +1,111 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gunpla-fabrication-suite"
+version = "0.1.0"
+description = "A premium, offline-first workshop management application for Gunpla builders."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Adeptus Craftmatica", email = "adeptus.craftmatica@proton.me" }]
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: X11 Applications :: Qt",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Graphics",
+]
+
+dependencies = [
+    "PySide6>=6.7",
+    "SQLAlchemy>=2.0",
+    "alembic>=1.13",
+    "pydantic>=2.7",
+    "Pillow>=10.3",
+    "httpx>=0.27",
+    "qasync>=0.27",
+    "platformdirs>=4.2",
+    "structlog>=24.1",
+    "packaging>=24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2",
+    "pytest-qt>=4.4",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "pre-commit>=3.7",
+]
+
+[project.scripts]
+gunpla-fabrication-suite = "gunpla_fabrication_suite.__main__:main"
+
+[project.entry-points."gunpla_fabrication_suite.plugins"]
+# Third-party plugins register themselves here, e.g.:
+# example_plugin = "example_plugin.plugin:ExamplePlugin"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gunpla_fabrication_suite"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+extend-exclude = ["*.spec"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",   # pycodestyle / pyflakes
+    "I",             # isort
+    "UP",            # pyupgrade
+    "B",             # bugbear
+    "C90",           # mccabe complexity
+    "SIM",           # simplify
+    "N",             # pep8-naming
+    "RUF",           # ruff-specific
+]
+ignore = [
+    "N999",  # allow package name gunpla_fabrication_suite
+    "N802",  # Qt overrides (closeEvent, keyPressEvent, eventFilter, ...) are camelCase by contract
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["N802"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "src"
+explicit_package_bases = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = ["qasync.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+qt_api = "pyside6"
+testpaths = ["tests"]
+addopts = "-ra"

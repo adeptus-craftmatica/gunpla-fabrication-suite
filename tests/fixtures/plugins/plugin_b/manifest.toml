@@ -1,0 +1,11 @@
+id = "test.plugin.b"
+name = "Test Plugin B"
+version = "1.0.0"
+api_version = "1"
+entry_point = "plugin:PluginB"
+description = "A fixture plugin that depends on Test Plugin A, used to test load ordering."
+author = "Test Fixture"
+
+dependencies = ["test.plugin.a"]
+optional_dependencies = []
+permissions = []

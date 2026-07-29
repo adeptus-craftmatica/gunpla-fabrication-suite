@@ -1,0 +1,16 @@
+id = "com.adeptuscraftmatica.gfs.kit_library"
+name = "Kit Library"
+version = "1.0.0"
+api_version = "1"
+entry_point = "plugin:KitLibraryPlugin"
+description = "Gunpla collection and backlog management."
+author = "Adeptus Craftmatica"
+
+dependencies = []
+optional_dependencies = []
+
+permissions = [
+    "database.read",
+    "database.write",
+    "notifications.publish",
+]

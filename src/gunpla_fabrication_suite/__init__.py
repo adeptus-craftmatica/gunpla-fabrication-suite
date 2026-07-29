@@ -1,0 +1,6 @@
+"""Gunpla Fabrication Suite — an offline-first workshop management application."""
+
+from __future__ import annotations
+
+__version__ = "0.1.0"
+__all__ = ["__version__"]

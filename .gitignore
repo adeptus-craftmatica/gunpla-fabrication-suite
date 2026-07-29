@@ -1,0 +1,97 @@
+# ── AI assistant working folders ────────────────────────────────────────────
+.claude/
+.codex/
+.ai/
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ── Virtual environments ─────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Testing / coverage ───────────────────────────────────────────────────────
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+.tox/
+.hypothesis/
+tests/fixtures/tmp/
+
+# ── Alembic runtime artifacts ────────────────────────────────────────────────
+# (migration *scripts* under migrations/versions are tracked; runtime output is not)
+
+# ── Local application data (never commit user data) ─────────────────────────
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.db
+/database/
+/media/
+/imports/
+/exports/
+/backups/
+/cache/
+/logs/
+/recovery/
+*.gfsarchive
+
+# ── Secrets ──────────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+credentials.json
+secrets.toml
+
+# ── PyCharm / JetBrains ──────────────────────────────────────────────────────
+.idea/workspace.xml
+.idea/shelf/
+.idea/httpRequests/
+.idea/dataSources/
+.idea/dataSources.local.xml
+.idea/sonarlint/
+.idea/dictionaries/
+
+# ── Packaging output ─────────────────────────────────────────────────────────
+*.spec.bak
+*.dmg
+
+# ── Operating system files ───────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
