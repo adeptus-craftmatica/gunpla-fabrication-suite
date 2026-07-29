@@ -23,6 +23,7 @@ _SEVERITY_STYLE: dict[NotificationSeverity, tuple[str, str]] = {
 }
 
 _DISPLAY_DURATION_MS = 6000
+_TOAST_WIDTH = 360
 
 
 class _ToastCard(QFrame):
@@ -30,6 +31,13 @@ class _ToastCard(QFrame):
         self, notification: Notification, on_dismiss: Callable[[_ToastCard], None]
     ) -> None:
         super().__init__()
+        # Fix the width up front, before the layout's first sizeHint pass,
+        # so the word-wrapped message label computes its wrapped height
+        # against the width it will actually render at. Constraining the
+        # width only *after* construction (e.g. via setMaximumWidth from the
+        # caller) locks in a too-short height from the initial unconstrained
+        # pass and clips the wrapped text top and bottom.
+        self.setFixedWidth(_TOAST_WIDTH)
         symbol, border_color = _SEVERITY_STYLE[notification.severity]
         self.setStyleSheet(
             f"""
@@ -99,7 +107,6 @@ class ToastOverlay(QWidget):
     def show_notification(self, notification: Notification) -> None:
         """Display ``notification`` as a card that auto-dismisses after a delay."""
         card = _ToastCard(notification, self._dismiss)
-        card.setMaximumWidth(360)
         self._stack.addWidget(card, alignment=Qt.AlignmentFlag.AlignRight)
         self.raise_()
         QTimer.singleShot(_DISPLAY_DURATION_MS, lambda: self._dismiss(card))
