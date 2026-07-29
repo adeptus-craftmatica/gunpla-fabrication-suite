@@ -48,12 +48,11 @@ class ContinueBuildingWidget(QWidget):
 
         builds = [b for b in build_service.list_builds() if b.status in _ACTIVE_STATUSES]
         if not builds:
-            # Deliberately no description text here: this card's height is
-            # capped to its sizeHint (see dashboard_page.py's card sizing),
-            # and a wrapped second line can be clipped before the grid
-            # layout settles on a final column width. Keeping dashboard-card
-            # empty states to a single, short line sidesteps that entirely.
-            layout.addWidget(EmptyStateWidget(title="No active builds"))
+            layout.addWidget(
+                EmptyStateWidget(
+                    title="No active builds", description="Start one from the Build Planner."
+                )
+            )
             return
 
         build = builds[0]  # list_builds() already orders by most recently updated
