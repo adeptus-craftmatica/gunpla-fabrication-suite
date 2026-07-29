@@ -113,3 +113,7 @@ def test_plugin_manager_page_lists_started_plugins(shell: MainWindow) -> None:
     page = shell._workspace.currentWidget()
     assert isinstance(page, PluginManagerPage)
     assert page._table.rowCount() >= 2
+
+
+def test_window_opens_maximized_on_first_launch(shell: MainWindow) -> None:
+    assert shell.isMaximized() is True

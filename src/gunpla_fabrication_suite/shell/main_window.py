@@ -201,7 +201,8 @@ class MainWindow(QMainWindow):
     def _restore_window_state(self) -> None:
         settings = self._qsettings()
         geometry = settings.value("window/geometry")
-        if isinstance(geometry, QByteArray):
+        has_saved_geometry = isinstance(geometry, QByteArray)
+        if has_saved_geometry:
             self.restoreGeometry(geometry)
         else:
             self.resize(1280, 800)
@@ -212,8 +213,15 @@ class MainWindow(QMainWindow):
         else:
             self._splitter.setSizes([200, 800, 280])
 
+        # Default to maximized on first launch; afterwards, honor whatever
+        # maximized/restored state the user last left the window in.
+        was_maximized = settings.value("window/is_maximized", not has_saved_geometry, type=bool)
+        if was_maximized:
+            self.showMaximized()
+
     def closeEvent(self, event: QCloseEvent) -> None:
         settings = self._qsettings()
+        settings.setValue("window/is_maximized", self.isMaximized())
         settings.setValue("window/geometry", self.saveGeometry())
         settings.setValue("window/splitter", self._splitter.saveState())
         self._plugin_manager.shutdown_all()

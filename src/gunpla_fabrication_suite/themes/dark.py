@@ -37,7 +37,6 @@ PALETTE = DarkPalette()
 
 _STYLESHEET = f"""
 QWidget {{
-    background-color: {PALETTE.background};
     color: {PALETTE.text_primary};
     font-size: 13px;
 }}
