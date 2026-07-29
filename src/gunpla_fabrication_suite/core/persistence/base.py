@@ -11,8 +11,9 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+from gunpla_fabrication_suite.core.persistence.types import UTCDateTime
 
 
 class Base(DeclarativeBase):
@@ -35,18 +36,16 @@ class UUIDPrimaryKeyMixin:
 class TimestampMixin:
     """Adds timezone-aware ``created_at`` / ``updated_at`` columns."""
 
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=utcnow, nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False
+        UTCDateTime, default=utcnow, onupdate=utcnow, nullable=False
     )
 
 
 class SoftDeleteMixin:
     """Adds a nullable ``deleted_at`` column for soft deletion."""
 
-    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    deleted_at: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
 
     @property
     def is_deleted(self) -> bool:

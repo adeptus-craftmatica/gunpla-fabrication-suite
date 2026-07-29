@@ -4,9 +4,9 @@ A premium, offline-first workshop management application for Gunpla builders —
 collection and backlog, plan and log builds, manage commissions and customers, and keep tabs on
 paints, supplies, and finances, all from one desktop app.
 
-> **Status:** early foundation (Milestone 1). The core plugin architecture, application shell, and
-> a working Kit Library are implemented; most domain plugins described in [`docs/architecture.md`](docs/architecture.md)
-> are not yet built.
+> **Status:** early foundation (Milestones 1 and 3). The core plugin architecture, application
+> shell, Kit Library, and Build Planner are implemented; most other domain plugins described in
+> [`docs/architecture.md`](docs/architecture.md) are not yet built.
 
 ## Screenshots
 
@@ -20,8 +20,12 @@ _Coming soon._
 - **Kit Library** — track kits you own or want, with manufacturer, grade, scale, series, purchase
   details, priority, storage location, tags, and notes. Full create/edit/list/archive/restore
   workflow backed by a real SQLite database.
+- **Build Planner** — turn a kit into a tracked build from one of eight templates, with
+  reorderable weighted stages and tasks, a work-session timer that survives a restart, and a
+  build journal. See [`docs/architecture.md`](docs/architecture.md) for how it depends on Kit
+  Library through the shared service container instead of importing its internals.
 - **Dashboard** — a workspace overview assembled entirely from widgets contributed by other
-  plugins.
+  plugins, including a "Continue Building" card.
 - **Plugin Manager** — see every discovered plugin's version, author, status, health,
   dependencies, and permissions, and enable or disable it.
 - **Command palette** (`Ctrl+K`) — fuzzy-searchable access to every registered action.

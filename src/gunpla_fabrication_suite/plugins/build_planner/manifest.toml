@@ -1,0 +1,16 @@
+id = "com.adeptuscraftmatica.gfs.build_planner"
+name = "Build Planner"
+version = "1.0.0"
+api_version = "1"
+entry_point = "plugin:BuildPlannerPlugin"
+description = "Plan, track, and journal a kit's build from planning through completion."
+author = "Adeptus Craftmatica"
+
+dependencies = ["com.adeptuscraftmatica.gfs.kit_library"]
+optional_dependencies = []
+
+permissions = [
+    "database.read",
+    "database.write",
+    "notifications.publish",
+]

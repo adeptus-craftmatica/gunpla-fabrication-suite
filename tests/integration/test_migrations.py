@@ -12,8 +12,15 @@ def test_migrate_creates_expected_tables(app_paths) -> None:
 
     db.migrate()
 
-    inspector = inspect(db.engine)
-    assert "kit_library_kits" in inspector.get_table_names()
+    table_names = set(inspect(db.engine).get_table_names())
+    assert "kit_library_kits" in table_names
+    assert {
+        "build_planner_projects",
+        "build_planner_stages",
+        "build_planner_tasks",
+        "build_planner_work_sessions",
+        "build_planner_journal_entries",
+    } <= table_names
     db.dispose()
 
 

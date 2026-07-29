@@ -18,7 +18,14 @@ ENTRY_POINT_GROUP = "gunpla_fabrication_suite.plugins"
 #: Model modules imported so their tables register on the shared declarative
 #: ``Base`` before Alembic inspects metadata. A plugin with persisted models
 #: must add its model module(s) here.
-MODEL_MODULES: tuple[str, ...] = ("gunpla_fabrication_suite.plugins.kit_library.models.kit",)
+MODEL_MODULES: tuple[str, ...] = (
+    "gunpla_fabrication_suite.plugins.kit_library.models.kit",
+    "gunpla_fabrication_suite.plugins.build_planner.models.build_project",
+    "gunpla_fabrication_suite.plugins.build_planner.models.build_stage",
+    "gunpla_fabrication_suite.plugins.build_planner.models.build_task",
+    "gunpla_fabrication_suite.plugins.build_planner.models.work_session",
+    "gunpla_fabrication_suite.plugins.build_planner.models.journal_entry",
+)
 
 
 @dataclass(frozen=True, slots=True)

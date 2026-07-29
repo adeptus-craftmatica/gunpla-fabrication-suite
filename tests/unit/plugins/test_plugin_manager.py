@@ -44,6 +44,7 @@ def test_builtin_plugins_are_discovered_and_started(app_paths, database, qapp) -
     ids = {record.manifest.id for record in manager.records}
     assert "com.adeptuscraftmatica.gfs.dashboard" in ids
     assert "com.adeptuscraftmatica.gfs.kit_library" in ids
+    assert "com.adeptuscraftmatica.gfs.build_planner" in ids
     for record in manager.records:
         assert record.status == PluginStatus.STARTED
         assert record.health.value == "healthy"

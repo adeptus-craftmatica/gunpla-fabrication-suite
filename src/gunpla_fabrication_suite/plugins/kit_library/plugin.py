@@ -49,11 +49,17 @@ class KitLibraryPlugin:
         )
 
     def initialize(self) -> None:
-        """Construct the repository and service that the UI factories depend on."""
+        """Construct the repository and service, and publish the service for other plugins.
+
+        Other plugins (e.g. Build Planner) depend on Kit Library and resolve
+        ``KitService`` through the shared service container rather than
+        importing this plugin's repository or ORM models directly.
+        """
         if self._context is None:
             raise RuntimeError("initialize() called before register()")
         repository = KitRepository(self._context.database)
         self._service = KitService(repository, self._context.events)
+        self._context.services.register_instance(KitService, self._service)
 
     def start(self) -> None:
         """No background activity to begin."""

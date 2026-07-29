@@ -98,10 +98,22 @@ repository or ORM models.
 notifications, plugin health — each shown with both an icon and text, never color alone). The
 command palette (`Ctrl+K`) fuzzy-matches every registered `CommandContribution`.
 
+## Cross-plugin service sharing
+
+Build Planner depends on Kit Library and needs to look up kits, but must not import Kit Library's
+repository or ORM models — that would couple the two plugins' internal schemas together. Instead,
+Kit Library registers its `KitService` instance into the shared `ServiceContainer` during its own
+`initialize()`, and Build Planner resolves it (`context.services.try_resolve(KitService)`) during
+its own `initialize()`. The `dependencies` list in Build Planner's `manifest.toml` guarantees Kit
+Library has already registered before Build Planner runs. This is the pattern any plugin should
+follow when it needs another plugin's data: depend on its manifest, resolve its published service,
+never import its persistence layer.
+
 ## Milestones
 
-Milestone 1 (this foundation) delivers: the shell, plugin SDK, plugin manager, event bus, service
+Milestone 1 (the foundation) delivers: the shell, plugin SDK, plugin manager, event bus, service
 container, SQLite + Alembic, logging, settings persistence, the Dashboard plugin, and a fully
-working Kit Library plugin. Subsequent milestones (Build Planner, Photography, Catalog Import,
-Commissions, Inventory & Finance, Calendar/Portfolio/Reporting/Automation) each add one or more
-plugins without changing this core.
+working Kit Library plugin. Milestone 3 (Build Planner) adds build tracking — templates, stages,
+tasks, a work-session timer, and a build journal — plus the cross-plugin service-sharing pattern
+above. Subsequent milestones (Photography, Catalog Import, Commissions, Inventory & Finance,
+Calendar/Portfolio/Reporting/Automation) each add one or more plugins without changing this core.

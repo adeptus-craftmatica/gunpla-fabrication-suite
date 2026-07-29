@@ -11,6 +11,23 @@ import pytest
 from gunpla_fabrication_suite.core.events import EventBus
 from gunpla_fabrication_suite.core.paths import ApplicationPaths
 from gunpla_fabrication_suite.core.persistence import DatabaseService
+from gunpla_fabrication_suite.plugins.build_planner.repositories.build_repository import (
+    BuildRepository,
+)
+from gunpla_fabrication_suite.plugins.build_planner.repositories.journal_repository import (
+    JournalRepository,
+)
+from gunpla_fabrication_suite.plugins.build_planner.repositories.work_session_repository import (
+    WorkSessionRepository,
+)
+from gunpla_fabrication_suite.plugins.build_planner.services.build_service import BuildService
+from gunpla_fabrication_suite.plugins.build_planner.services.journal_service import JournalService
+from gunpla_fabrication_suite.plugins.build_planner.services.work_session_service import (
+    WorkSessionService,
+)
+from gunpla_fabrication_suite.plugins.kit_library.repositories.kit_repository import KitRepository
+from gunpla_fabrication_suite.plugins.kit_library.schemas import KitCreate
+from gunpla_fabrication_suite.plugins.kit_library.services.kit_service import KitService
 
 
 @pytest.fixture
@@ -34,3 +51,35 @@ def database(app_paths):
 def event_bus():
     """A fresh, empty event bus."""
     return EventBus()
+
+
+@pytest.fixture
+def kit_service(database, event_bus):
+    """A Kit Library service backed by the isolated test database."""
+    return KitService(KitRepository(database), event_bus)
+
+
+@pytest.fixture
+def existing_kit(kit_service):
+    """A single kit already saved, for tests that need a build to point at."""
+    return kit_service.create_kit(
+        KitCreate(manufacturer="Bandai", name="RX-78-2 Gundam", grade="HG")
+    )
+
+
+@pytest.fixture
+def build_service(database, kit_service, event_bus):
+    """A Build Planner service backed by the isolated test database."""
+    return BuildService(BuildRepository(database), kit_service, event_bus)
+
+
+@pytest.fixture
+def work_session_service(database, event_bus):
+    """A work-session timer service backed by the isolated test database."""
+    return WorkSessionService(WorkSessionRepository(database), event_bus)
+
+
+@pytest.fixture
+def journal_service(database):
+    """A build journal service backed by the isolated test database."""
+    return JournalService(JournalRepository(database))
