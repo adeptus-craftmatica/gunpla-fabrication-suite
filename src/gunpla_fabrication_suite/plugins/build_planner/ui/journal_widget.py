@@ -50,6 +50,12 @@ class JournalWidget(QWidget):
             item = self._feed_layout.takeAt(0)
             widget = item.widget() if item is not None else None
             if widget is not None:
+                # setParent(None) detaches it from rendering immediately;
+                # deleteLater() alone leaves it visible (just no longer
+                # layout-managed) until the event loop gets around to
+                # destroying it, which briefly renders two overlapping
+                # copies if refresh() runs again before that happens.
+                widget.setParent(None)
                 widget.deleteLater()
 
         entries = self._service.list_entries(self._build_id)

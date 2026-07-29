@@ -182,6 +182,11 @@ class BuildDetailView(QWidget):
             item = self._actions_row.takeAt(0)
             widget = item.widget() if item is not None else None
             if widget is not None:
+                # setParent(None) detaches it from rendering immediately;
+                # deleteLater() alone leaves it visible until the event loop
+                # processes the deletion, which can briefly double-render if
+                # refresh() runs again before that happens.
+                widget.setParent(None)
                 widget.deleteLater()
 
         status = BuildStatus(build.status)

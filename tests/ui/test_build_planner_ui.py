@@ -248,3 +248,35 @@ def test_timer_widget_start_and_stop_flow(
 
     assert work_session_service.get_active_session() is None
     assert widget._start_button.isEnabled() is True
+
+
+def test_journal_widget_refresh_twice_in_a_row_leaves_no_stale_widget(
+    qtbot, build_service, journal_service, existing_kit
+) -> None:
+    """Regression: calling refresh() again before a prior deleteLater() completes
+    used to leave two overlapping empty-state widgets visible at once.
+    Removing a widget from the layout (``takeAt``) only stops the layout from
+    managing it — it stays a visible child of the parent, rendering right on
+    top of the new one, until ``deleteLater()``'s deferred deletion actually
+    runs. ``takeAt`` alone also makes ``_feed_layout.count()`` look correct
+    immediately, which is why this needs to check parentage, not count.
+    """
+    from gunpla_fabrication_suite.plugins.build_planner.ui.journal_widget import JournalWidget
+
+    build = _create_build(build_service, existing_kit)
+    widget = JournalWidget(journal_service, build.id)
+    qtbot.addWidget(widget)
+
+    # __init__ already called refresh() once; grab that first empty-state
+    # widget, then call refresh() again immediately — simulating
+    # BuildDetailView's own refresh() running right after JournalWidget's
+    # constructor already self-populated — before any event loop turn could
+    # process a deferred deletion.
+    first_empty_state = widget._feed_layout.itemAt(0).widget()
+    widget.refresh()
+
+    assert widget._feed_layout.count() == 1
+    # The old widget must be detached immediately (parent is None), not
+    # merely scheduled for deletion — otherwise it stays visible, briefly
+    # overlapping the new one, until the event loop gets around to it.
+    assert first_empty_state.parent() is None

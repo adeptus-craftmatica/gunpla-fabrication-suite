@@ -71,5 +71,6 @@ class BuildPlannerPage(QWidget):
     def _teardown_detail_view(self) -> None:
         if self._detail_view is not None:
             self._stack.removeWidget(self._detail_view)
+            self._detail_view.setParent(None)
             self._detail_view.deleteLater()
             self._detail_view = None

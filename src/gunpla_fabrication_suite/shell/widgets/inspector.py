@@ -57,6 +57,10 @@ class InspectorPanel(QWidget):
             item = self._details_layout.takeAt(0)
             widget = item.widget() if item is not None else None
             if widget is not None:
+                # setParent(None) detaches it from rendering immediately;
+                # deleteLater() alone would leave it visible until the event
+                # loop processes the deletion.
+                widget.setParent(None)
                 widget.deleteLater()
         label = QLabel("Nothing selected.")
         label.setStyleSheet(f"color: {PALETTE.text_secondary};")
@@ -69,6 +73,7 @@ class InspectorPanel(QWidget):
             item = self._details_layout.takeAt(0)
             existing_widget = item.widget() if item is not None else None
             if existing_widget is not None:
+                existing_widget.setParent(None)
                 existing_widget.deleteLater()
 
         if widget is None:

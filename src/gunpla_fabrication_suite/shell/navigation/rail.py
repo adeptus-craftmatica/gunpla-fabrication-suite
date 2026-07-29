@@ -38,13 +38,17 @@ class NavigationRail(QWidget):
         """Rebuild the rail's buttons from the registry's current contributions."""
         for button in self._buttons.values():
             self._button_group.removeButton(button)
-            button.deleteLater()
         self._buttons.clear()
 
         while self._layout.count() > 1:
             item = self._layout.takeAt(0)
             widget = item.widget() if item is not None else None
             if widget is not None:
+                # setParent(None) detaches it from rendering immediately;
+                # deleteLater() alone leaves it visible until the event loop
+                # processes the deletion, which can briefly double-render if
+                # refresh() runs again before that happens.
+                widget.setParent(None)
                 widget.deleteLater()
 
         for index, page in enumerate(registry.all_pages()):
