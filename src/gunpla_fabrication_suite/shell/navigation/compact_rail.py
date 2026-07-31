@@ -25,7 +25,11 @@ def _compact_label(title: str) -> str:
     Initials keep pages visually distinct without needing an icon asset
     pipeline; the full title is still available as a tooltip.
     """
-    words = title.split()
+    # Filter to words starting with a letter/digit — a bare connector like
+    # "&" (as in "Stats & Insights") would otherwise become part of the
+    # initials, and a lone "&" in a QPushButton's text is itself a stray
+    # mnemonic marker (see rail.py/top_bar.py's escaping for the same issue).
+    words = [word for word in title.split() if word[:1].isalnum()]
     if len(words) == 1:
         return words[0][:1].upper()
     return "".join(word[0].upper() for word in words[:2])

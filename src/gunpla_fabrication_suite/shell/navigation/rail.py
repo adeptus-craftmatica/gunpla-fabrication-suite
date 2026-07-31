@@ -51,7 +51,11 @@ class NavigationRail(QWidget):
                 widget.deleteLater()
 
         for index, page in enumerate(registry.all_pages()):
-            button = QPushButton(page.title)
+            # QPushButton treats a bare "&" as a mnemonic marker (stripped,
+            # next character underlined) — escape it as "&&" so a page
+            # title containing one (e.g. "Stats & Insights") renders
+            # literally instead of showing a stray underline artifact.
+            button = QPushButton(page.title.replace("&", "&&"))
             if page.icon is not None:
                 button.setIcon(page.icon)
             button.setCheckable(True)
