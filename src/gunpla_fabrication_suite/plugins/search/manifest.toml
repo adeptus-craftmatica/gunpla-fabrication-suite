@@ -1,0 +1,17 @@
+id = "com.adeptuscraftmatica.gfs.search"
+name = "Global Search"
+version = "1.0.0"
+api_version = "1"
+entry_point = "plugin:GlobalSearchPlugin"
+description = "Fuzzy-search kits, builds, photos, and supplies from anywhere via the Command Palette."
+author = "Adeptus Craftmatica"
+
+dependencies = [
+    "com.adeptuscraftmatica.gfs.kit_library",
+    "com.adeptuscraftmatica.gfs.build_planner",
+    "com.adeptuscraftmatica.gfs.photography",
+    "com.adeptuscraftmatica.gfs.supplies",
+]
+optional_dependencies = []
+
+permissions = []

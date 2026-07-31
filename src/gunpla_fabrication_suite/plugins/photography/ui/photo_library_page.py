@@ -115,6 +115,13 @@ class PhotoLibraryPage(QWidget):
         self._photos = self._photo_service.list_all_photos()
         self._rebuild_grid()
 
+    def show_photo(self, photo_id: str) -> None:
+        """Open the lightbox for ``photo_id``, the same as double-clicking its thumbnail."""
+        self.refresh()
+        match = next((photo for photo in self._photos if photo.id == photo_id), None)
+        if match is not None:
+            self._open_lightbox(match)
+
     def _rebuild_grid(self) -> None:
         while self._grid.count():
             item = self._grid.takeAt(0)

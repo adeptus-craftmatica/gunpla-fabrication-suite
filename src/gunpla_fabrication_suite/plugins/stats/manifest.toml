@@ -1,0 +1,17 @@
+id = "com.adeptuscraftmatica.gfs.stats"
+name = "Stats & Insights"
+version = "1.0.0"
+api_version = "1"
+entry_point = "plugin:StatsPlugin"
+description = "Rolled-up collection and build statistics across kits, builds, supplies, and photos."
+author = "Adeptus Craftmatica"
+
+dependencies = [
+    "com.adeptuscraftmatica.gfs.kit_library",
+    "com.adeptuscraftmatica.gfs.build_planner",
+    "com.adeptuscraftmatica.gfs.supplies",
+    "com.adeptuscraftmatica.gfs.photography",
+]
+optional_dependencies = []
+
+permissions = []

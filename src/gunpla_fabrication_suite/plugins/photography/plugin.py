@@ -44,6 +44,7 @@ class PhotographyPlugin:
                 factory=self._build_page,
                 section="main",
                 order=30,
+                focus=lambda photo_id: self._page.show_photo(photo_id) if self._page else None,
             ),
         )
         context.dashboard_widgets.register(

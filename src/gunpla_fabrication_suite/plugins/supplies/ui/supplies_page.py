@@ -177,6 +177,27 @@ class SuppliesPage(QWidget):
         )
         self._refresh_table()
 
+    def show_supply(self, supply_id: str) -> None:
+        """Select ``supply_id`` in the table, the same as a user clicking its row."""
+        self._search_edit.clear()
+        self._category_combo.setCurrentIndex(0)
+        target = next(
+            (s for s in self._service.list_supplies(include_archived=True) if s.id == supply_id),
+            None,
+        )
+        if target is not None and target.is_deleted:
+            self._show_archived_checkbox.setChecked(True)
+        self._reload()
+        for row in range(self._table.rowCount()):
+            item = self._table.item(row, 0)
+            if item is None:
+                continue
+            data = item.data(Qt.ItemDataRole.UserRole)
+            if isinstance(data, SupplyRead) and data.id == supply_id:
+                self._table.selectRow(row)
+                self._table.scrollToItem(item)
+                return
+
     def _visible_supplies(self) -> list[SupplyRead]:
         query = self._search_edit.text().strip().lower()
         # currentData() round-trips SupplyCategory (a StrEnum, itself a str

@@ -94,6 +94,14 @@ def test_main_window_registers_core_and_plugin_navigation(shell: MainWindow) -> 
     assert "core.plugin_manager" in page_ids
 
 
+def test_stats_and_search_plugins_load_successfully(shell: MainWindow) -> None:
+    page_ids = {page.page_id for page in shell._navigation.all_pages()}
+    assert "stats" in page_ids
+
+    command_ids = {c.command_id for c in shell._commands.all_commands()}
+    assert "search.open_everything" in command_ids
+
+
 def test_selecting_a_nav_page_shows_it_in_the_workspace(shell: MainWindow) -> None:
     shell._workspace.show_page("kit_library")
 

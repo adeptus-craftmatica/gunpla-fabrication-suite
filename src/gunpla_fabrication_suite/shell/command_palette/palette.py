@@ -8,34 +8,8 @@ from PySide6.QtWidgets import QLineEdit, QListWidget, QListWidgetItem, QVBoxLayo
 
 from gunpla_fabrication_suite.plugin_sdk.contracts import CommandContribution
 from gunpla_fabrication_suite.plugin_sdk.registries import CommandRegistry
+from gunpla_fabrication_suite.shared_ui import fuzzy_score
 from gunpla_fabrication_suite.themes import PALETTE
-
-
-def _fuzzy_score(query: str, candidate: str) -> int | None:
-    """Return a match quality score (lower is better), or ``None`` if no match.
-
-    Every character of ``query`` must appear in ``candidate`` in order
-    (case-insensitively); the score rewards matches that start earlier and
-    are more contiguous.
-    """
-    query = query.lower()
-    candidate_lower = candidate.lower()
-    if not query:
-        return len(candidate_lower)
-
-    position = candidate_lower.find(query)
-    if position != -1:
-        return position
-
-    cursor = 0
-    spread = 0
-    for char in query:
-        found_at = candidate_lower.find(char, cursor)
-        if found_at == -1:
-            return None
-        spread += found_at - cursor
-        cursor = found_at + 1
-    return 1000 + spread
 
 
 class CommandPaletteDialog(QWidget):
@@ -68,7 +42,7 @@ class CommandPaletteDialog(QWidget):
         self._results.clear()
         scored: list[tuple[int, CommandContribution]] = []
         for command in self._registry.all_commands():
-            score = _fuzzy_score(query, command.title)
+            score = fuzzy_score(query, command.title)
             if score is not None:
                 scored.append((score, command))
         scored.sort(key=lambda pair: pair[0])

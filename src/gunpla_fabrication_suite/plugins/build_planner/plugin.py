@@ -73,6 +73,7 @@ class BuildPlannerPlugin:
                 factory=self._build_page,
                 section="main",
                 order=20,
+                focus=lambda build_id: self._page.show_build(build_id) if self._page else None,
             ),
         )
         context.dashboard_widgets.register(
@@ -131,6 +132,15 @@ class BuildPlannerPlugin:
         self._supply_usage_service = SupplyUsageService(
             SupplyUsageRepository(self._context.database), supply_service, self._context.events
         )
+
+        # Published so other plugins (e.g. Stats, Global Search) can resolve
+        # build data through the shared container without importing this
+        # plugin's repositories or ORM models — same pattern Kit Library,
+        # Photography, and Supplies already use for their own services.
+        # JournalService is intentionally not published — nothing needs it.
+        self._context.services.register_instance(BuildService, self._build_service)
+        self._context.services.register_instance(WorkSessionService, self._work_session_service)
+        self._context.services.register_instance(SupplyUsageService, self._supply_usage_service)
 
         self._page = BuildPlannerPage(
             build_service=self._build_service,

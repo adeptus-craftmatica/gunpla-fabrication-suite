@@ -13,7 +13,7 @@ from typing import Literal
 
 from PySide6.QtWidgets import QLabel
 
-LabelRole = Literal["section-title", "secondary", "caption"]
+LabelRole = Literal["section-title", "secondary", "caption", "big-number"]
 
 
 def set_label_role(label: QLabel, role: LabelRole) -> None:

@@ -146,3 +146,33 @@ def test_deselecting_clears_the_inspector(
     placeholder = page._inspector._details_layout.itemAt(0).widget()
     assert isinstance(placeholder, QLabel)
     assert placeholder.text() == "Nothing selected."
+
+
+def test_show_supply_selects_the_matching_row(
+    supply_service: SupplyService, page: SuppliesPage
+) -> None:
+    supply_service.create_supply(_payload("Gundam Gray"))
+    target = supply_service.create_supply(_payload("Panel Liner"))
+    page._reload()
+
+    page.show_supply(target.id)
+
+    selected = page._selected_supply()
+    assert selected is not None
+    assert selected.id == target.id
+
+
+def test_show_supply_reveals_an_archived_supply_by_checking_show_archived(
+    supply_service: SupplyService, page: SuppliesPage
+) -> None:
+    target = supply_service.create_supply(_payload("Gundam Gray"))
+    supply_service.archive_supply(target.id)
+    page._reload()
+    assert page._table.rowCount() == 0
+
+    page.show_supply(target.id)
+
+    assert page._show_archived_checkbox.isChecked() is True
+    selected = page._selected_supply()
+    assert selected is not None
+    assert selected.id == target.id

@@ -262,3 +262,25 @@ def test_lightbox_delete_calls_on_changed_and_closes_when_last_photo(
     dialog._delete()
 
     assert changed_calls == [1]
+
+
+def test_show_photo_opens_the_lightbox_for_that_photo(
+    qtbot, photo_service, jobs, layout_manager, tmp_path
+) -> None:
+    page = PhotoLibraryPage(
+        photo_service=photo_service,
+        jobs=jobs,
+        notifications=NotificationCenter(),
+        layout_manager=layout_manager,
+    )
+    qtbot.addWidget(page)
+
+    photo_service.import_photo(_make_jpeg(tmp_path / "a.jpg", color=(1, 2, 3)))
+    target = photo_service.import_photo(_make_jpeg(tmp_path / "b.jpg", color=(4, 5, 6)))
+
+    opened: list[str] = []
+    page._open_lightbox = lambda photo: opened.append(photo.id)
+
+    page.show_photo(target.id)
+
+    assert opened == [target.id]

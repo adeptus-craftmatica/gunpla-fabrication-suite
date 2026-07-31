@@ -27,6 +27,14 @@ class NavigationPageContribution:
     icon: QIcon | None = None
     section: str = "main"
     order: int = 100
+    focus: Callable[[str], None] | None = None
+    """Prime this page to show one specific record, given its id.
+
+    Set by a plugin that wants "jump to a specific record" support (e.g.
+    from Global Search) — the callable should do whatever the page's own
+    ``show_<record>`` method does. Left ``None`` for pages with no
+    single-record concept (Dashboard, Plugin Manager, Stats).
+    """
 
 
 @dataclass(frozen=True, slots=True)

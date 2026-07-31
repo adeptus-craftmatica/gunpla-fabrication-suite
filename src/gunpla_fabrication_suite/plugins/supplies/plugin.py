@@ -25,6 +25,7 @@ class SuppliesPlugin:
     def __init__(self) -> None:
         self._context: PluginContext | None = None
         self._service: SupplyService | None = None
+        self._page: SuppliesPage | None = None
 
     def register(self, context: PluginContext) -> None:
         """Register the Supplies navigation page and its dashboard widget."""
@@ -38,6 +39,7 @@ class SuppliesPlugin:
                 factory=self._build_page,
                 section="main",
                 order=40,
+                focus=lambda supply_id: self._page.show_supply(supply_id) if self._page else None,
             ),
         )
         context.dashboard_widgets.register(
@@ -57,6 +59,9 @@ class SuppliesPlugin:
         repository = SupplyRepository(self._context.database)
         self._service = SupplyService(repository, self._context.events)
         self._context.services.register_instance(SupplyService, self._service)
+        self._page = SuppliesPage(
+            self._service, self._context.notifications, self._context.inspector
+        )
 
     def start(self) -> None:
         """No background activity to begin."""
@@ -68,12 +73,8 @@ class SuppliesPlugin:
         """No resources to release."""
 
     def _build_page(self) -> SuppliesPage:
-        assert self._service is not None and self._context is not None
-        return SuppliesPage(
-            self._service,
-            self._context.notifications,
-            self._context.inspector,
-        )
+        assert self._page is not None
+        return self._page
 
     def _build_low_stock_widget(self) -> LowStockWidget:
         assert self._service is not None

@@ -334,6 +334,11 @@ QLabel[role="caption"] {{
     font-size: 11px;
     color: {theme.text_secondary};
 }}
+QLabel[role="big-number"] {{
+    font-size: 32px;
+    font-weight: 700;
+    color: {theme.accent};
+}}
 #photoThumbnailImage {{
     background-color: {theme.surface};
     border: 1px solid {theme.border};

@@ -6,6 +6,7 @@ from gunpla_fabrication_suite.shared_ui.buttons import ButtonKind, set_button_ki
 from gunpla_fabrication_suite.shared_ui.card import Card
 from gunpla_fabrication_suite.shared_ui.confirm_dialog import confirm_destructive_action
 from gunpla_fabrication_suite.shared_ui.empty_state import EmptyStateWidget
+from gunpla_fabrication_suite.shared_ui.fuzzy_match import fuzzy_score
 from gunpla_fabrication_suite.shared_ui.inspector_panel import InspectorPanel
 from gunpla_fabrication_suite.shared_ui.labels import LabelRole, set_label_role
 from gunpla_fabrication_suite.shared_ui.page_header import PageHeader
@@ -25,6 +26,7 @@ __all__ = [
     "ToastOverlay",
     "configure_table_columns",
     "confirm_destructive_action",
+    "fuzzy_score",
     "set_button_kind",
     "set_label_role",
 ]

@@ -23,6 +23,7 @@ class KitLibraryPlugin:
     def __init__(self) -> None:
         self._context: PluginContext | None = None
         self._service: KitService | None = None
+        self._page: KitLibraryPage | None = None
 
     def register(self, context: PluginContext) -> None:
         """Register the Kit Library navigation page and its dashboard widget."""
@@ -36,6 +37,7 @@ class KitLibraryPlugin:
                 factory=self._build_page,
                 section="main",
                 order=10,
+                focus=lambda kit_id: self._page.show_kit(kit_id) if self._page else None,
             ),
         )
         context.dashboard_widgets.register(
@@ -60,6 +62,12 @@ class KitLibraryPlugin:
         repository = KitRepository(self._context.database)
         self._service = KitService(repository, self._context.events)
         self._context.services.register_instance(KitService, self._service)
+        self._page = KitLibraryPage(
+            self._service,
+            self._context.notifications,
+            self._context.layout_manager,
+            self._context.inspector,
+        )
 
     def start(self) -> None:
         """No background activity to begin."""
@@ -71,13 +79,8 @@ class KitLibraryPlugin:
         """No resources to release."""
 
     def _build_page(self) -> KitLibraryPage:
-        assert self._service is not None and self._context is not None
-        return KitLibraryPage(
-            self._service,
-            self._context.notifications,
-            self._context.layout_manager,
-            self._context.inspector,
-        )
+        assert self._page is not None
+        return self._page
 
     def _build_backlog_widget(self) -> BacklogCountWidget:
         assert self._service is not None

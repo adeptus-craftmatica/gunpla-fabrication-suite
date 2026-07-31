@@ -200,6 +200,26 @@ class KitLibraryPage(QWidget):
         )
         self._refresh_view()
 
+    def show_kit(self, kit_id: str) -> None:
+        """Select ``kit_id`` in the table, the same as a user clicking its row."""
+        self._board_checkbox.setChecked(False)
+        self._search_edit.clear()
+        target = next(
+            (k for k in self._service.list_kits(include_archived=True) if k.id == kit_id), None
+        )
+        if target is not None and target.is_deleted:
+            self._show_archived_checkbox.setChecked(True)
+        self._reload()
+        for row in range(self._table.rowCount()):
+            item = self._table.item(row, 0)
+            if item is None:
+                continue
+            data = item.data(Qt.ItemDataRole.UserRole)
+            if isinstance(data, KitRead) and data.id == kit_id:
+                self._table.selectRow(row)
+                self._table.scrollToItem(item)
+                return
+
     def _visible_kits(self) -> list[KitRead]:
         query = self._search_edit.text().strip().lower()
         return [

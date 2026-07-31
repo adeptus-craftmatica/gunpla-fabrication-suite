@@ -94,3 +94,33 @@ def test_archive_declined_by_user_keeps_kit_active(
     page._on_archive()
 
     assert page._table.rowCount() == 1
+
+
+def test_show_kit_selects_the_matching_row(
+    kit_service: KitService, page: KitLibraryPage
+) -> None:
+    kit_service.create_kit(_payload("RX-78-2 Gundam"))
+    target = kit_service.create_kit(_payload("Zaku II"))
+    page._reload()
+
+    page.show_kit(target.id)
+
+    selected = page._selected_kit()
+    assert selected is not None
+    assert selected.id == target.id
+
+
+def test_show_kit_reveals_an_archived_kit_by_checking_show_archived(
+    kit_service: KitService, page: KitLibraryPage
+) -> None:
+    target = kit_service.create_kit(_payload("RX-78-2 Gundam"))
+    kit_service.archive_kit(target.id)
+    page._reload()
+    assert page._table.rowCount() == 0
+
+    page.show_kit(target.id)
+
+    assert page._show_archived_checkbox.isChecked() is True
+    selected = page._selected_kit()
+    assert selected is not None
+    assert selected.id == target.id
