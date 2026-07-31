@@ -40,6 +40,7 @@ from gunpla_fabrication_suite.plugin_sdk.registries import (
 from gunpla_fabrication_suite.shared_ui import InspectorPanel
 from gunpla_fabrication_suite.shared_ui.toast import ToastOverlay
 from gunpla_fabrication_suite.shell.appearance_page import AppearancePage
+from gunpla_fabrication_suite.shell.backup_restore_page import BackupRestorePage
 from gunpla_fabrication_suite.shell.command_palette import CommandPaletteDialog
 from gunpla_fabrication_suite.shell.diagnostics_dialog import DiagnosticsDialog
 from gunpla_fabrication_suite.shell.navigation import (
@@ -146,6 +147,18 @@ class MainWindow(QMainWindow):
         self._navigation.register(
             _CORE_PLUGIN_ID,
             NavigationPageContribution(
+                page_id="core.backup_restore",
+                title="Backup & Restore",
+                factory=lambda: BackupRestorePage(
+                    self._paths, self._database, self._notifications
+                ),
+                section="secondary",
+                order=850,
+            ),
+        )
+        self._navigation.register(
+            _CORE_PLUGIN_ID,
+            NavigationPageContribution(
                 page_id="core.plugin_manager",
                 title="Plugin Manager",
                 factory=lambda: PluginManagerPage(
@@ -163,6 +176,14 @@ class MainWindow(QMainWindow):
                 command_id="core.open_appearance",
                 title="Open Appearance Settings",
                 callback=lambda: self.navigate_to("core.appearance"),
+            ),
+        )
+        self._commands.register(
+            _CORE_PLUGIN_ID,
+            CommandContribution(
+                command_id="core.open_backup_restore",
+                title="Open Backup & Restore",
+                callback=lambda: self.navigate_to("core.backup_restore"),
             ),
         )
         self._commands.register(

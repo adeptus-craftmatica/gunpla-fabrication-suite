@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gunpla-fabrication-suite"
-version = "3.0.1"
+version = "4.0.0"
 description = "A premium, offline-first workshop management application for Gunpla builders."
 readme = "README.md"
 license = { text = "MIT" }

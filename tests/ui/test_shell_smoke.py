@@ -92,6 +92,7 @@ def test_main_window_registers_core_and_plugin_navigation(shell: MainWindow) -> 
     assert "dashboard" in page_ids
     assert "kit_library" in page_ids
     assert "core.plugin_manager" in page_ids
+    assert "core.backup_restore" in page_ids
 
 
 def test_stats_and_search_plugins_load_successfully(shell: MainWindow) -> None:
