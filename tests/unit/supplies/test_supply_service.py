@@ -160,3 +160,48 @@ def test_archiving_a_low_stock_supply_removes_it_from_the_count(
     supply_service.archive_supply(created.id)
 
     assert supply_service.count_low_stock_supplies() == 0
+
+
+def test_adjust_quantity_decrements_by_the_given_delta(supply_service: SupplyService) -> None:
+    created = supply_service.create_supply(_create_payload(quantity_on_hand=10))
+
+    updated = supply_service.adjust_quantity(created.id, -3)
+
+    assert updated.quantity_on_hand == 7
+
+
+def test_adjust_quantity_round_trip_restores_the_original_value(
+    supply_service: SupplyService,
+) -> None:
+    created = supply_service.create_supply(_create_payload(quantity_on_hand=10))
+
+    supply_service.adjust_quantity(created.id, -4)
+    restored = supply_service.adjust_quantity(created.id, 4)
+
+    assert restored.quantity_on_hand == 10
+
+
+def test_adjust_quantity_allows_a_negative_result(supply_service: SupplyService) -> None:
+    created = supply_service.create_supply(_create_payload(quantity_on_hand=2))
+
+    updated = supply_service.adjust_quantity(created.id, -5)
+
+    assert updated.quantity_on_hand == -3
+
+
+def test_adjust_quantity_publishes_supply_updated(
+    supply_service: SupplyService, event_bus: EventBus
+) -> None:
+    events: list[SupplyUpdated] = []
+    event_bus.subscribe(SupplyUpdated, events.append)
+    created = supply_service.create_supply(_create_payload())
+
+    supply_service.adjust_quantity(created.id, -1)
+
+    assert len(events) == 1
+    assert events[0].supply_id == created.id
+
+
+def test_adjust_quantity_raises_for_unknown_id(supply_service: SupplyService) -> None:
+    with pytest.raises(SupplyNotFoundError):
+        supply_service.adjust_quantity("missing-id", -1)

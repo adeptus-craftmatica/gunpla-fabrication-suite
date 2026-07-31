@@ -43,6 +43,14 @@ class WorkSessionAlreadyRunningError(RuntimeError):
         self.build_id = build_id
 
 
+class SupplyUsageNotFoundError(LookupError):
+    """Raised when an operation targets a supply usage id that does not exist."""
+
+    def __init__(self, usage_id: str) -> None:
+        super().__init__(f"No supply usage found with id {usage_id!r}")
+        self.usage_id = usage_id
+
+
 class UnknownTemplateError(LookupError):
     """Raised when a build is created with a template key that does not exist."""
 

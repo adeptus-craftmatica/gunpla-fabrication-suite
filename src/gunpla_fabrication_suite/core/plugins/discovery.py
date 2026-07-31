@@ -25,6 +25,7 @@ MODEL_MODULES: tuple[str, ...] = (
     "gunpla_fabrication_suite.plugins.build_planner.models.build_task",
     "gunpla_fabrication_suite.plugins.build_planner.models.work_session",
     "gunpla_fabrication_suite.plugins.build_planner.models.journal_entry",
+    "gunpla_fabrication_suite.plugins.build_planner.models.supply_usage",
     "gunpla_fabrication_suite.plugins.photography.models.photo",
     "gunpla_fabrication_suite.plugins.photography.models.photo_relationship",
     "gunpla_fabrication_suite.plugins.supplies.models.supply",

@@ -109,6 +109,27 @@ class SupplyService:
         saved = self._repository.update(existing)
         return SupplyRead.model_validate(saved)
 
+    def adjust_quantity(self, supply_id: str, delta: float) -> SupplyRead:
+        """Adjust ``quantity_on_hand`` by ``delta`` and publish :class:`SupplyUpdated`.
+
+        Unlike :meth:`update_supply`, this touches only the quantity counter
+        and doesn't bump ``version`` — it's for high-frequency, narrow
+        adjustments (e.g. Build Planner logging or undoing supply usage),
+        not a record edit. There's no floor at zero: the undo path (removing
+        a logged usage) must apply the exact inverse delta to land back on
+        the original value, and clamping would silently break that
+        invertibility. A negative result just reads as "very out of stock,"
+        which the existing low-stock indicator already surfaces correctly.
+
+        Raises:
+            SupplyNotFoundError: If ``supply_id`` does not exist.
+        """
+        updated = self._repository.adjust_quantity(supply_id, delta)
+        if updated is None:
+            raise SupplyNotFoundError(supply_id)
+        self._events.publish(SupplyUpdated(supply_id=updated.id, updated_at=updated.updated_at))
+        return SupplyRead.model_validate(updated)
+
     def get_supply(self, supply_id: str) -> SupplyRead:
         """Fetch a single supply.
 

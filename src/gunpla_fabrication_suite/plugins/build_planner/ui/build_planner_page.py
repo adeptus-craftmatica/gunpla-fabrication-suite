@@ -9,6 +9,9 @@ from gunpla_fabrication_suite.core.layout import LayoutManager
 from gunpla_fabrication_suite.core.notifications import NotificationCenter
 from gunpla_fabrication_suite.plugins.build_planner.services.build_service import BuildService
 from gunpla_fabrication_suite.plugins.build_planner.services.journal_service import JournalService
+from gunpla_fabrication_suite.plugins.build_planner.services.supply_usage_service import (
+    SupplyUsageService,
+)
 from gunpla_fabrication_suite.plugins.build_planner.services.work_session_service import (
     WorkSessionService,
 )
@@ -16,6 +19,7 @@ from gunpla_fabrication_suite.plugins.build_planner.ui.build_detail_view import 
 from gunpla_fabrication_suite.plugins.build_planner.ui.build_list_view import BuildListView
 from gunpla_fabrication_suite.plugins.kit_library.services.kit_service import KitService
 from gunpla_fabrication_suite.plugins.photography.services.photo_service import PhotoService
+from gunpla_fabrication_suite.plugins.supplies.services.supply_service import SupplyService
 
 
 class BuildPlannerPage(QWidget):
@@ -32,8 +36,10 @@ class BuildPlannerPage(QWidget):
         build_service: BuildService,
         work_session_service: WorkSessionService,
         journal_service: JournalService,
+        supply_usage_service: SupplyUsageService,
         kit_service: KitService,
         photo_service: PhotoService,
+        supply_service: SupplyService,
         jobs: BackgroundJobManager,
         notifications: NotificationCenter,
         layout_manager: LayoutManager,
@@ -43,8 +49,10 @@ class BuildPlannerPage(QWidget):
         self._build_service = build_service
         self._work_session_service = work_session_service
         self._journal_service = journal_service
+        self._supply_usage_service = supply_usage_service
         self._kit_service = kit_service
         self._photo_service = photo_service
+        self._supply_service = supply_service
         self._jobs = jobs
         self._notifications = notifications
         self._layout_manager = layout_manager
@@ -65,8 +73,10 @@ class BuildPlannerPage(QWidget):
             build_service=self._build_service,
             work_session_service=self._work_session_service,
             journal_service=self._journal_service,
+            supply_usage_service=self._supply_usage_service,
             kit_service=self._kit_service,
             photo_service=self._photo_service,
+            supply_service=self._supply_service,
             jobs=self._jobs,
             notifications=self._notifications,
             layout_manager=self._layout_manager,

@@ -26,17 +26,24 @@ from gunpla_fabrication_suite.plugins.build_planner.models.enums import BuildSta
 from gunpla_fabrication_suite.plugins.build_planner.schemas import BuildProjectRead
 from gunpla_fabrication_suite.plugins.build_planner.services.build_service import BuildService
 from gunpla_fabrication_suite.plugins.build_planner.services.journal_service import JournalService
+from gunpla_fabrication_suite.plugins.build_planner.services.supply_usage_service import (
+    SupplyUsageService,
+)
 from gunpla_fabrication_suite.plugins.build_planner.services.work_session_service import (
     WorkSessionService,
 )
 from gunpla_fabrication_suite.plugins.build_planner.ui.edit_dialogs import EditBuildDetailsDialog
 from gunpla_fabrication_suite.plugins.build_planner.ui.journal_widget import JournalWidget
 from gunpla_fabrication_suite.plugins.build_planner.ui.stage_tree_widget import StageTreeWidget
+from gunpla_fabrication_suite.plugins.build_planner.ui.supplies_used_widget import (
+    SuppliesUsedWidget,
+)
 from gunpla_fabrication_suite.plugins.build_planner.ui.timer_widget import TimerWidget
 from gunpla_fabrication_suite.plugins.kit_library.services.kit_service import KitService
 from gunpla_fabrication_suite.plugins.photography.models.entity_types import PhotoEntityType
 from gunpla_fabrication_suite.plugins.photography.services.photo_service import PhotoService
 from gunpla_fabrication_suite.plugins.photography.ui.photo_gallery_widget import PhotoGalleryWidget
+from gunpla_fabrication_suite.plugins.supplies.services.supply_service import SupplyService
 from gunpla_fabrication_suite.shared_ui import (
     SPACING,
     ButtonKind,
@@ -60,8 +67,10 @@ class BuildDetailView(QWidget):
         build_service: BuildService,
         work_session_service: WorkSessionService,
         journal_service: JournalService,
+        supply_usage_service: SupplyUsageService,
         kit_service: KitService,
         photo_service: PhotoService,
+        supply_service: SupplyService,
         jobs: BackgroundJobManager,
         notifications: NotificationCenter,
         layout_manager: LayoutManager,
@@ -156,9 +165,13 @@ class BuildDetailView(QWidget):
             entity_id=build_id,
         )
 
+        self._supplies_used_widget = SuppliesUsedWidget(
+            supply_usage_service, supply_service, build_id
+        )
+
         self._right_layout = right_layout
-        self._journal_photos_section: QWidget | None = None
-        self._rebuild_journal_photos_section()
+        self._side_section: QWidget | None = None
+        self._rebuild_side_sections()
 
         splitter.addWidget(right_panel)
         splitter.setStretchFactor(0, 1)
@@ -168,10 +181,10 @@ class BuildDetailView(QWidget):
         self.refresh()
 
     def _on_layout_changed(self, _layout_id: str) -> None:
-        self._rebuild_journal_photos_section()
+        self._rebuild_side_sections()
 
-    def _rebuild_journal_photos_section(self) -> None:
-        old_section = self._journal_photos_section
+    def _rebuild_side_sections(self) -> None:
+        old_section = self._side_section
         if old_section is not None:
             self._right_layout.removeWidget(old_section)
             old_section.setParent(None)
@@ -179,8 +192,8 @@ class BuildDetailView(QWidget):
 
         if self._layout_manager.current == COMMAND_DECK:
             # Command Deck's extra width has no tab bar competing for
-            # attention, so Journal and Photos are both always visible,
-            # stacked, instead of hidden behind tabs.
+            # attention, so Journal, Photos, and Supplies are all always
+            # visible, stacked, instead of hidden behind tabs.
             section: QWidget = QWidget()
             section_layout = QVBoxLayout(section)
             section_layout.setContentsMargins(0, 0, 0, 0)
@@ -193,21 +206,27 @@ class BuildDetailView(QWidget):
             photos_card = Card("Photos")
             photos_card.add_widget(self._photo_gallery, stretch=1)
             section_layout.addWidget(photos_card, 1)
+
+            supplies_card = Card("Supplies Used")
+            supplies_card.add_widget(self._supplies_used_widget, stretch=1)
+            section_layout.addWidget(supplies_card, 1)
         else:
             tabs = QTabWidget()
             tabs.addTab(self._journal_scroll, "Journal")
             tabs.addTab(self._photo_gallery, "Photos")
+            tabs.addTab(self._supplies_used_widget, "Supplies")
             section = Card()
             section.add_widget(tabs, stretch=1)
 
-        self._journal_photos_section = section
+        self._side_section = section
         self._right_layout.addWidget(section, 1)
         # Tearing down the old section's setParent(None) hide()-cascades down
-        # to these two reused, live widgets, explicitly marking them hidden —
-        # reparenting them into the new section doesn't clear that flag, so
+        # to these three reused, live widgets, explicitly marking them hidden
+        # — reparenting them into the new section doesn't clear that flag, so
         # they must be shown again explicitly or they render as empty space.
         self._journal_scroll.show()
         self._photo_gallery.show()
+        self._supplies_used_widget.show()
 
     def refresh(self) -> None:
         """Reload everything from the database."""
@@ -240,6 +259,7 @@ class BuildDetailView(QWidget):
         self._refresh_sessions_table()
         self._journal_widget.refresh()
         self._photo_gallery.refresh()
+        self._supplies_used_widget.refresh()
 
     def _refresh_header(self) -> None:
         self.refresh()

@@ -75,3 +75,24 @@ class WorkSessionCompleted:
     session_id: str
     build_id: str
     duration_seconds: int
+
+
+@dataclass(frozen=True, slots=True)
+class SupplyUsageRecorded:
+    """A supply was logged as used on a build, decrementing its stock."""
+
+    usage_id: str
+    build_id: str
+    supply_id: str
+    quantity_used: float
+    created_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class SupplyUsageDeleted:
+    """A logged supply usage was removed, restoring its stock."""
+
+    usage_id: str
+    build_id: str
+    supply_id: str
+    quantity_used: float

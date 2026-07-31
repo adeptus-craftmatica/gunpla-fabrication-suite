@@ -22,11 +22,17 @@ from gunpla_fabrication_suite.plugins.build_planner.repositories.build_repositor
 from gunpla_fabrication_suite.plugins.build_planner.repositories.journal_repository import (
     JournalRepository,
 )
+from gunpla_fabrication_suite.plugins.build_planner.repositories.supply_usage_repository import (
+    SupplyUsageRepository,
+)
 from gunpla_fabrication_suite.plugins.build_planner.repositories.work_session_repository import (
     WorkSessionRepository,
 )
 from gunpla_fabrication_suite.plugins.build_planner.services.build_service import BuildService
 from gunpla_fabrication_suite.plugins.build_planner.services.journal_service import JournalService
+from gunpla_fabrication_suite.plugins.build_planner.services.supply_usage_service import (
+    SupplyUsageService,
+)
 from gunpla_fabrication_suite.plugins.build_planner.services.work_session_service import (
     WorkSessionService,
 )
@@ -35,6 +41,11 @@ from gunpla_fabrication_suite.plugins.kit_library.schemas import KitCreate
 from gunpla_fabrication_suite.plugins.kit_library.services.kit_service import KitService
 from gunpla_fabrication_suite.plugins.photography.repositories import PhotoRepository
 from gunpla_fabrication_suite.plugins.photography.services import PhotoService
+from gunpla_fabrication_suite.plugins.supplies.repositories.supply_repository import (
+    SupplyRepository,
+)
+from gunpla_fabrication_suite.plugins.supplies.schemas import SupplyCreate
+from gunpla_fabrication_suite.plugins.supplies.services.supply_service import SupplyService
 from gunpla_fabrication_suite.shared_ui import InspectorPanel
 
 
@@ -97,6 +108,28 @@ def journal_service(database):
 def photo_service(database, app_paths, event_bus):
     """A Photography service backed by the isolated test database and media directories."""
     return PhotoService(PhotoRepository(database), app_paths, event_bus)
+
+
+@pytest.fixture
+def supply_service(database, event_bus):
+    """A Supplies service backed by the isolated test database."""
+    return SupplyService(SupplyRepository(database), event_bus)
+
+
+@pytest.fixture
+def existing_supply(supply_service):
+    """A single priced supply already saved, for tests that need one to log usage against."""
+    return supply_service.create_supply(
+        SupplyCreate(
+            brand="Mr. Color", name="Gundam Gray", quantity_on_hand=10, purchase_price_cents=500
+        )
+    )
+
+
+@pytest.fixture
+def supply_usage_service(database, supply_service, event_bus):
+    """A Build Planner supply-usage service backed by the isolated test database."""
+    return SupplyUsageService(SupplyUsageRepository(database), supply_service, event_bus)
 
 
 @pytest.fixture

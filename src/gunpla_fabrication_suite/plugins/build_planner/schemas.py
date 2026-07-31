@@ -120,6 +120,30 @@ class JournalEntryRead(BaseModel):
     created_at: datetime
 
 
+class SupplyUsageCreate(BaseModel):
+    """Fields required to log a supply's use on a build."""
+
+    supply_id: str
+    quantity_used: float = Field(gt=0)
+    notes: str | None = None
+
+
+class SupplyUsageRead(BaseModel):
+    """A logged supply usage as returned to the UI layer."""
+
+    model_config = {"from_attributes": True}
+
+    id: str
+    build_project_id: str
+    supply_id: str
+    quantity_used: float
+    unit_snapshot: str
+    unit_cost_cents_snapshot: int | None
+    estimated_cost_cents: int | None
+    notes: str | None
+    created_at: datetime
+
+
 __all__ = [
     "BuildProjectCreate",
     "BuildProjectRead",
@@ -129,5 +153,7 @@ __all__ = [
     "BuildTaskRead",
     "JournalEntryCreate",
     "JournalEntryRead",
+    "SupplyUsageCreate",
+    "SupplyUsageRead",
     "WorkSessionRead",
 ]

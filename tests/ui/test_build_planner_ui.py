@@ -142,8 +142,10 @@ def test_build_detail_view_shows_title_and_progress(
     build_service,
     work_session_service,
     journal_service,
+    supply_usage_service,
     kit_service,
     photo_service,
+    supply_service,
     jobs,
     layout_manager,
     existing_kit,
@@ -153,8 +155,10 @@ def test_build_detail_view_shows_title_and_progress(
         build_service=build_service,
         work_session_service=work_session_service,
         journal_service=journal_service,
+        supply_usage_service=supply_usage_service,
         kit_service=kit_service,
         photo_service=photo_service,
+        supply_service=supply_service,
         jobs=jobs,
         notifications=NotificationCenter(),
         layout_manager=layout_manager,
@@ -172,8 +176,10 @@ def test_build_detail_view_start_action_updates_status(
     build_service,
     work_session_service,
     journal_service,
+    supply_usage_service,
     kit_service,
     photo_service,
+    supply_service,
     jobs,
     layout_manager,
     existing_kit,
@@ -183,8 +189,10 @@ def test_build_detail_view_start_action_updates_status(
         build_service=build_service,
         work_session_service=work_session_service,
         journal_service=journal_service,
+        supply_usage_service=supply_usage_service,
         kit_service=kit_service,
         photo_service=photo_service,
+        supply_service=supply_service,
         jobs=jobs,
         notifications=NotificationCenter(),
         layout_manager=layout_manager,
@@ -205,8 +213,10 @@ def test_build_detail_view_archive_calls_on_back(
     build_service,
     work_session_service,
     journal_service,
+    supply_usage_service,
     kit_service,
     photo_service,
+    supply_service,
     jobs,
     layout_manager,
     existing_kit,
@@ -220,8 +230,10 @@ def test_build_detail_view_archive_calls_on_back(
         build_service=build_service,
         work_session_service=work_session_service,
         journal_service=journal_service,
+        supply_usage_service=supply_usage_service,
         kit_service=kit_service,
         photo_service=photo_service,
+        supply_service=supply_service,
         jobs=jobs,
         notifications=NotificationCenter(),
         layout_manager=layout_manager,
@@ -241,8 +253,10 @@ def test_build_planner_page_navigates_between_list_and_detail(
     build_service,
     work_session_service,
     journal_service,
+    supply_usage_service,
     kit_service,
     photo_service,
+    supply_service,
     jobs,
     layout_manager,
     existing_kit,
@@ -252,8 +266,10 @@ def test_build_planner_page_navigates_between_list_and_detail(
         build_service=build_service,
         work_session_service=work_session_service,
         journal_service=journal_service,
+        supply_usage_service=supply_usage_service,
         kit_service=kit_service,
         photo_service=photo_service,
+        supply_service=supply_service,
         jobs=jobs,
         notifications=NotificationCenter(),
         layout_manager=layout_manager,
@@ -324,13 +340,135 @@ def test_journal_widget_refresh_twice_in_a_row_leaves_no_stale_widget(
     assert first_empty_state.parent() is None
 
 
+def test_supplies_used_widget_empty_state(
+    qtbot, supply_usage_service, supply_service, build_service, existing_kit
+) -> None:
+    from gunpla_fabrication_suite.plugins.build_planner.ui.supplies_used_widget import (
+        SuppliesUsedWidget,
+    )
+
+    build = _create_build(build_service, existing_kit)
+    widget = SuppliesUsedWidget(supply_usage_service, supply_service, build.id)
+    qtbot.addWidget(widget)
+
+    assert widget._table.rowCount() == 0
+    assert widget._total_label.text() == "Total: $0.00"
+
+
+def test_supplies_used_widget_add_flow_updates_table_and_total(
+    qtbot, supply_usage_service, supply_service, build_service, existing_kit, existing_supply
+) -> None:
+    from gunpla_fabrication_suite.plugins.build_planner.ui.supplies_used_widget import (
+        SuppliesUsedWidget,
+    )
+    from gunpla_fabrication_suite.plugins.build_planner.ui.supply_dialogs import (
+        LogSupplyUsageDialog,
+    )
+
+    build = _create_build(build_service, existing_kit)
+    widget = SuppliesUsedWidget(supply_usage_service, supply_service, build.id)
+    qtbot.addWidget(widget)
+
+    dialog = LogSupplyUsageDialog([existing_supply])
+    dialog._quantity_spin.setValue(2)
+    dialog._on_accept()
+    supply_usage_service.add_usage(build.id, dialog.result_data())
+    widget.refresh()
+
+    assert widget._table.rowCount() == 1
+    assert widget._total_label.text() == "Total: $1.00"
+
+
+def test_supplies_used_widget_remove_flow_restores_stock(
+    qtbot,
+    monkeypatch,
+    supply_usage_service,
+    supply_service,
+    build_service,
+    existing_kit,
+    existing_supply,
+) -> None:
+    import gunpla_fabrication_suite.plugins.build_planner.ui.supplies_used_widget as widget_module
+    from gunpla_fabrication_suite.plugins.build_planner.schemas import SupplyUsageCreate
+    from gunpla_fabrication_suite.plugins.build_planner.ui.supplies_used_widget import (
+        SuppliesUsedWidget,
+    )
+
+    monkeypatch.setattr(widget_module, "confirm_destructive_action", lambda *a, **k: True)
+    build = _create_build(build_service, existing_kit)
+    supply_usage_service.add_usage(
+        build.id, SupplyUsageCreate(supply_id=existing_supply.id, quantity_used=3)
+    )
+    widget = SuppliesUsedWidget(supply_usage_service, supply_service, build.id)
+    qtbot.addWidget(widget)
+    widget._table.selectRow(0)
+
+    widget._on_remove()
+
+    assert widget._table.rowCount() == 0
+    assert supply_service.get_supply(existing_supply.id).quantity_on_hand == 10
+
+
+def test_supplies_used_widget_visible_across_layouts(
+    qtbot,
+    build_service,
+    work_session_service,
+    journal_service,
+    supply_usage_service,
+    kit_service,
+    photo_service,
+    supply_service,
+    jobs,
+    layout_manager,
+    existing_kit,
+) -> None:
+    """Regression: the shell has a real history (Plugin Manager's stray-dialog
+    bug, this session) of a widget staying hidden after being reparented back
+    into a layout because the outgoing container's teardown hide()-cascaded it
+    and nothing re-showed it. Command Deck stacks all three sections
+    simultaneously (no tabs hiding inactive siblings), so it's the layout
+    where a missed .show() call would actually be observable via isVisible().
+    """
+    from gunpla_fabrication_suite.core.layout import COMMAND_DECK, RAIL
+
+    build = _create_build(build_service, existing_kit)
+    view = BuildDetailView(
+        build_service=build_service,
+        work_session_service=work_session_service,
+        journal_service=journal_service,
+        supply_usage_service=supply_usage_service,
+        kit_service=kit_service,
+        photo_service=photo_service,
+        supply_service=supply_service,
+        jobs=jobs,
+        notifications=NotificationCenter(),
+        layout_manager=layout_manager,
+        build_id=build.id,
+        on_back=lambda: None,
+    )
+    qtbot.addWidget(view)
+    view.show()
+    qtbot.wait(10)
+
+    layout_manager.set_layout(RAIL)
+    qtbot.wait(10)
+    layout_manager.set_layout(COMMAND_DECK)
+    qtbot.wait(10)
+
+    assert view._supplies_used_widget.isVisible() is True
+    assert view._journal_scroll.isVisible() is True
+    assert view._photo_gallery.isVisible() is True
+
+
 def test_resume_navigates_to_the_build_planner_page_and_opens_the_build(
     qtbot,
     build_service,
     work_session_service,
     journal_service,
+    supply_usage_service,
     kit_service,
     photo_service,
+    supply_service,
     jobs,
     navigator,
     layout_manager,
@@ -346,8 +484,10 @@ def test_resume_navigates_to_the_build_planner_page_and_opens_the_build(
         build_service=build_service,
         work_session_service=work_session_service,
         journal_service=journal_service,
+        supply_usage_service=supply_usage_service,
         kit_service=kit_service,
         photo_service=photo_service,
+        supply_service=supply_service,
         jobs=jobs,
         notifications=NotificationCenter(),
         layout_manager=layout_manager,

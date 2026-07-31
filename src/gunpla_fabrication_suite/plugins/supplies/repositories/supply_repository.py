@@ -55,6 +55,21 @@ class SupplyRepository:
             session.expunge(merged)
             return merged
 
+    def adjust_quantity(self, supply_id: str, delta: float) -> Supply | None:
+        """Add ``delta`` to ``quantity_on_hand`` in one transaction.
+
+        Returns the updated row, or ``None`` if ``supply_id`` does not exist.
+        """
+        with self._database.session() as session:
+            supply = session.get(Supply, supply_id)
+            if supply is None:
+                return None
+            supply.quantity_on_hand += delta
+            session.flush()
+            session.refresh(supply)
+            session.expunge(supply)
+            return supply
+
     def count_active(self) -> int:
         """The number of supplies not soft-deleted, for dashboard widgets."""
         with self._database.session() as session:
