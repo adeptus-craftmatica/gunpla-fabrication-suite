@@ -22,8 +22,8 @@ def kit_service(database: DatabaseService, event_bus: EventBus) -> KitService:
 
 
 @pytest.fixture
-def page(qtbot, kit_service: KitService) -> KitLibraryPage:
-    widget = KitLibraryPage(kit_service, NotificationCenter())
+def page(qtbot, kit_service: KitService, layout_manager, inspector) -> KitLibraryPage:
+    widget = KitLibraryPage(kit_service, NotificationCenter(), layout_manager, inspector)
     qtbot.addWidget(widget)
     return widget
 

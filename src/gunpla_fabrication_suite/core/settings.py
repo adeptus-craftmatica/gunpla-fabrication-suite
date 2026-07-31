@@ -22,7 +22,8 @@ _logger = get_logger("settings")
 class GeneralSettings(BaseModel):
     """General/appearance settings shown in the Settings page."""
 
-    theme: str = "dark"
+    theme: str = "workshop_dark"
+    layout: str = "rail"
     interface_density: str = "comfortable"
     reduced_motion: bool = False
 

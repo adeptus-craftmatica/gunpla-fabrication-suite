@@ -4,13 +4,19 @@ Any page can push a details widget into the inspector's "Details" tab; the
 "Activity", "Attachments", "Notes", and "History" tabs are structurally
 present for every record type but only populated once the plugins that own
 those concepts (build journal, photography, ...) are implemented.
+
+Lives in ``shared_ui`` (not ``shell.widgets``, where it originated) because
+it is threaded into plugins via ``PluginContext`` — a page needs a live
+reference to push details into it — and ``plugin_sdk`` cannot import from
+``shell`` without a circular import (``shell`` already imports from
+``plugin_sdk``).
 """
 
 from __future__ import annotations
 
 from PySide6.QtWidgets import QLabel, QTabWidget, QVBoxLayout, QWidget
 
-from gunpla_fabrication_suite.themes import PALETTE
+from gunpla_fabrication_suite.shared_ui.labels import set_label_role
 
 
 class InspectorPanel(QWidget):
@@ -18,12 +24,14 @@ class InspectorPanel(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        # Background/border come from the #inspectorPanel rule in
+        # themes/base.py's global stylesheet, so they stay correct across a
+        # live theme switch.
         self.setObjectName("inspectorPanel")
-        self.setStyleSheet(
-            f"#inspectorPanel {{ background-color: {PALETTE.surface}; "
-            f"border-left: 1px solid {PALETTE.border}; }}"
-        )
-        self.setFixedWidth(280)
+        # No fixed width: Rail and Command Deck collapse this panel to 0 by
+        # default (see main_window.py's _apply_default_splitter_sizes) since
+        # most pages don't push anything into it yet; Workbench gives it a
+        # real default width instead, since that's its whole point.
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -46,7 +54,8 @@ class InspectorPanel(QWidget):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         label = QLabel(message)
-        label.setStyleSheet(f"color: {PALETTE.text_secondary}; padding: 12px;")
+        set_label_role(label, "secondary")
+        label.setStyleSheet("padding: 12px;")
         label.setWordWrap(True)
         layout.addWidget(label)
         layout.addStretch(1)
@@ -63,7 +72,7 @@ class InspectorPanel(QWidget):
                 widget.setParent(None)
                 widget.deleteLater()
         label = QLabel("Nothing selected.")
-        label.setStyleSheet(f"color: {PALETTE.text_secondary};")
+        set_label_role(label, "secondary")
         self._details_layout.addWidget(label)
         self._details_layout.addStretch(1)
 

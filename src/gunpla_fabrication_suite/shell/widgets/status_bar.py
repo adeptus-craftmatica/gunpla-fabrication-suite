@@ -11,7 +11,13 @@ from PySide6.QtWidgets import QLabel, QStatusBar, QWidget
 from gunpla_fabrication_suite.core.jobs import BackgroundJobManager
 from gunpla_fabrication_suite.core.notifications import Notification, NotificationCenter
 from gunpla_fabrication_suite.core.plugins import PluginManager, PluginStatus
-from gunpla_fabrication_suite.themes import PALETTE
+
+
+def _set_status(label: QLabel, status: str | None) -> None:
+    """Set the ``status`` property driving ``#statusSegment[status="..."]`` in the stylesheet."""
+    label.setProperty("status", status)
+    label.style().unpolish(label)
+    label.style().polish(label)
 
 
 class AppStatusBar(QStatusBar):
@@ -56,16 +62,18 @@ class AppStatusBar(QStatusBar):
 
     def _make_segment(self) -> QLabel:
         label = QLabel()
-        label.setStyleSheet(f"color: {PALETTE.text_secondary}; padding: 0 10px;")
+        # Colors come from the #statusSegment rules in themes/base.py's
+        # global stylesheet, so they stay correct across a live theme
+        # switch — see _set_status().
+        label.setObjectName("statusSegment")
         return label
 
     def set_database_status(self, *, ok: bool) -> None:
         """Update the database segment. Pass ``ok=False`` after a failed integrity check."""
         symbol = "●" if ok else "✕"
         text = "Database: OK" if ok else "Database: ERROR"
-        color = PALETTE.success if ok else PALETTE.danger
         self._database_label.setText(f"{symbol} {text}")
-        self._database_label.setStyleSheet(f"color: {color}; padding: 0 10px;")
+        _set_status(self._database_label, "ok" if ok else "error")
         self._database_label.setToolTip("SQLite integrity check result")
 
     def _refresh_jobs(self) -> None:
@@ -93,8 +101,8 @@ class AppStatusBar(QStatusBar):
             self._plugin_health_label.setText(
                 f"⚠ Plugins: {started}/{len(records)} ({failed} failed)"
             )
-            self._plugin_health_label.setStyleSheet(f"color: {PALETTE.warning}; padding: 0 10px;")
+            _set_status(self._plugin_health_label, "warning")
         else:
             self._plugin_health_label.setText(f"● Plugins: {started}/{len(records)}")
-            self._plugin_health_label.setStyleSheet(f"color: {PALETTE.success}; padding: 0 10px;")
+            _set_status(self._plugin_health_label, "ok")
         self._plugin_health_label.setToolTip("Started plugins / total discovered")

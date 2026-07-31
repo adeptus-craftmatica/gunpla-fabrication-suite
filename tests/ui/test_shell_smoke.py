@@ -7,11 +7,11 @@ from PySide6.QtCore import QSettings
 
 from gunpla_fabrication_suite.core.events import EventBus
 from gunpla_fabrication_suite.core.jobs import BackgroundJobManager
+from gunpla_fabrication_suite.core.navigation import Navigator
 from gunpla_fabrication_suite.core.notifications import NotificationCenter
 from gunpla_fabrication_suite.core.persistence import DatabaseService
 from gunpla_fabrication_suite.core.plugins import PluginManager
 from gunpla_fabrication_suite.core.services import ServiceContainer
-from gunpla_fabrication_suite.core.settings import SettingsService
 from gunpla_fabrication_suite.plugin_sdk.registries import (
     CommandRegistry,
     DashboardWidgetRegistry,
@@ -33,19 +33,33 @@ def isolated_qsettings(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def shell(qtbot, app_paths, database: DatabaseService, isolated_qsettings):
-    settings_service = SettingsService(app_paths.settings_file)
+def shell(
+    qtbot,
+    app_paths,
+    database: DatabaseService,
+    isolated_qsettings,
+    settings_service,
+    theme_manager,
+    layout_manager,
+    inspector,
+):
     navigation = NavigationRegistry()
     dashboard_widgets = DashboardWidgetRegistry()
     commands = CommandRegistry()
     notifications = NotificationCenter()
     jobs = BackgroundJobManager()
+    navigator = Navigator()
 
     plugin_manager = PluginManager(
         services=ServiceContainer(),
         events=EventBus(),
         database=database,
         notifications=notifications,
+        jobs=jobs,
+        navigator=navigator,
+        theme_manager=theme_manager,
+        layout_manager=layout_manager,
+        inspector=inspector,
         paths=app_paths,
         navigation=navigation,
         dashboard_widgets=dashboard_widgets,
@@ -61,6 +75,10 @@ def shell(qtbot, app_paths, database: DatabaseService, isolated_qsettings):
         database=database,
         notifications=notifications,
         jobs=jobs,
+        navigator=navigator,
+        theme_manager=theme_manager,
+        layout_manager=layout_manager,
+        inspector=inspector,
         paths=app_paths,
         settings_service=settings_service,
     )
@@ -117,3 +135,28 @@ def test_plugin_manager_page_lists_started_plugins(shell: MainWindow) -> None:
 
 def test_window_opens_maximized_on_first_launch(shell: MainWindow) -> None:
     assert shell.isMaximized() is True
+
+
+def test_layout_can_be_switched_back_and_forth_repeatedly(shell: MainWindow, qtbot) -> None:
+    """Regression: switching layouts left whichever nav widget (_nav_rail /
+    _top_nav_bar / _compact_rail / _diorama_overlay) the new layout doesn't
+    use still parented to the outgoing central widget, so its deleteLater()
+    destroyed that nav widget too — breaking the very next switch back to a
+    layout that needed it."""
+    from gunpla_fabrication_suite.core.layout import COMMAND_DECK, DIORAMA, RAIL, WORKBENCH
+
+    layout_manager = shell._layout_manager
+    for layout_id in (
+        COMMAND_DECK,
+        RAIL,
+        WORKBENCH,
+        DIORAMA,
+        RAIL,
+        DIORAMA,
+        WORKBENCH,
+        COMMAND_DECK,
+        RAIL,
+    ):
+        layout_manager.set_layout(layout_id)
+        qtbot.wait(10)  # let any deleteLater() from the switch actually run
+        shell.navigate_to("dashboard")

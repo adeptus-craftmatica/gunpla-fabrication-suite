@@ -6,7 +6,10 @@ entry_point = "plugin:BuildPlannerPlugin"
 description = "Plan, track, and journal a kit's build from planning through completion."
 author = "Adeptus Craftmatica"
 
-dependencies = ["com.adeptuscraftmatica.gfs.kit_library"]
+dependencies = [
+    "com.adeptuscraftmatica.gfs.kit_library",
+    "com.adeptuscraftmatica.gfs.photography",
+]
 optional_dependencies = []
 
 permissions = [

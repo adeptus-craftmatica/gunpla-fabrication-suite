@@ -25,9 +25,26 @@ from sqlalchemy import engine_from_config, pool
 
 from gunpla_fabrication_suite.core.paths import resolve_application_paths
 from gunpla_fabrication_suite.core.persistence.base import Base
+from gunpla_fabrication_suite.core.persistence.types import UTCDateTime
 from gunpla_fabrication_suite.core.plugins.discovery import import_all_model_modules
 
 config = context.config
+
+
+def render_item(type_: str, obj: object, autogen_context: object) -> str | bool:
+    """Render our custom column types as their plain SQLAlchemy equivalent.
+
+    Without this, autogenerate serializes ``UTCDateTime`` using its fully
+    qualified class path (``gunpla_fabrication_suite.core.persistence.types.UTCDateTime(...)``)
+    with no matching import in the generated migration file, which raises
+    ``NameError`` the moment that migration runs. The actual DDL a
+    ``UTCDateTime`` column produces is identical to ``DateTime(timezone=True)``
+    — it only changes Python-side value handling — so migrations can just
+    describe it that way.
+    """
+    if type_ == "type" and isinstance(obj, UTCDateTime):
+        return "sa.DateTime(timezone=True)"
+    return False
 
 if config.config_file_name is not None and os.path.exists(config.config_file_name):
     fileConfig(config.config_file_name)
@@ -48,6 +65,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        render_item=render_item,
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -61,7 +79,9 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection, target_metadata=target_metadata, render_item=render_item
+        )
         with context.begin_transaction():
             context.run_migrations()
     connectable.dispose()

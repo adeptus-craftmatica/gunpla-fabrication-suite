@@ -1,0 +1,18 @@
+id = "com.adeptuscraftmatica.gfs.photography"
+name = "Photography"
+version = "1.0.0"
+api_version = "1"
+entry_point = "plugin:PhotographyPlugin"
+description = "Managed progress-photo storage, galleries, lightbox, and before/after comparisons."
+author = "Adeptus Craftmatica"
+
+dependencies = []
+optional_dependencies = []
+
+permissions = [
+    "database.read",
+    "database.write",
+    "files.read",
+    "files.write",
+    "notifications.publish",
+]

@@ -6,12 +6,13 @@ import platform
 import sys
 
 from PySide6 import __version__ as pyside_version
-from PySide6.QtWidgets import QDialog, QLabel, QPlainTextEdit, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QDialog, QPlainTextEdit, QVBoxLayout, QWidget
 
 from gunpla_fabrication_suite import __version__
 from gunpla_fabrication_suite.core.paths import ApplicationPaths
 from gunpla_fabrication_suite.core.persistence import DatabaseService
 from gunpla_fabrication_suite.core.plugins import PluginManager
+from gunpla_fabrication_suite.shared_ui import PageHeader
 
 
 class DiagnosticsDialog(QDialog):
@@ -30,9 +31,7 @@ class DiagnosticsDialog(QDialog):
         self.resize(560, 480)
 
         layout = QVBoxLayout(self)
-        title = QLabel("Diagnostics")
-        title.setStyleSheet("font-size: 18px; font-weight: 600;")
-        layout.addWidget(title)
+        layout.addWidget(PageHeader("Diagnostics"))
 
         text = QPlainTextEdit()
         text.setReadOnly(True)

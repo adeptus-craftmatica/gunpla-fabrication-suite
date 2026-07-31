@@ -13,13 +13,12 @@ from PySide6.QtCore import QEvent, Qt, QTimer
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from gunpla_fabrication_suite.core.notifications import Notification, NotificationSeverity
-from gunpla_fabrication_suite.themes import PALETTE
 
-_SEVERITY_STYLE: dict[NotificationSeverity, tuple[str, str]] = {
-    NotificationSeverity.INFO: ("ℹ", PALETTE.accent),  # noqa: RUF001 - intentional info glyph
-    NotificationSeverity.SUCCESS: ("✓", PALETTE.success),
-    NotificationSeverity.WARNING: ("⚠", PALETTE.warning),
-    NotificationSeverity.ERROR: ("✕", PALETTE.danger),
+_SEVERITY_GLYPH: dict[NotificationSeverity, str] = {
+    NotificationSeverity.INFO: "ℹ",  # noqa: RUF001 - intentional info glyph
+    NotificationSeverity.SUCCESS: "✓",
+    NotificationSeverity.WARNING: "⚠",
+    NotificationSeverity.ERROR: "✕",
 }
 
 _DISPLAY_DURATION_MS = 6000
@@ -38,22 +37,15 @@ class _ToastCard(QFrame):
         # caller) locks in a too-short height from the initial unconstrained
         # pass and clips the wrapped text top and bottom.
         self.setFixedWidth(_TOAST_WIDTH)
-        symbol, border_color = _SEVERITY_STYLE[notification.severity]
-        self.setStyleSheet(
-            f"""
-            QFrame {{
-                background-color: {PALETTE.surface_raised};
-                border: 1px solid {border_color};
-                border-left: 4px solid {border_color};
-                border-radius: 4px;
-            }}
-            """
-        )
+        self.setObjectName("toastCard")
+        self.setProperty("severity", notification.severity.value)
         layout = QHBoxLayout(self)
         layout.setContentsMargins(10, 8, 8, 8)
 
-        symbol_label = QLabel(symbol)
-        symbol_label.setStyleSheet(f"color: {border_color}; font-weight: bold; border: none;")
+        symbol_label = QLabel(_SEVERITY_GLYPH[notification.severity])
+        symbol_label.setObjectName("toastSymbol")
+        symbol_label.setProperty("severity", notification.severity.value)
+        symbol_label.setStyleSheet("font-weight: bold; border: none;")
         layout.addWidget(symbol_label)
 
         message_label = QLabel(notification.message)
@@ -77,7 +69,12 @@ class ToastOverlay(QWidget):
 
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
-        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+        # Click-through everywhere the overlay itself is empty — only the
+        # toast cards (its children) should ever receive mouse events. This
+        # widget covers the entire parent window (see _reposition), so
+        # without this it silently swallows every click across the whole
+        # shell, not just the corner where a toast happens to be.
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
 
         outer = QVBoxLayout(self)
@@ -97,6 +94,24 @@ class ToastOverlay(QWidget):
         if watched is self.parentWidget() and event.type() == QEvent.Type.Resize:
             self._reposition()
         return False
+
+    def reparent_to(self, new_parent: QWidget) -> None:
+        """Move this overlay to sit on top of a different container.
+
+        Needed when the shell rebuilds its central-widget arrangement (e.g.
+        switching layouts) — this overlay isn't a normal child added via
+        ``addWidget()``; it positions itself purely via an installed event
+        filter keyed to whichever widget is currently its parent, so a plain
+        ``setParent()`` alone would leave it watching the wrong (soon to be
+        deleted) widget.
+        """
+        old_parent = self.parentWidget()
+        if old_parent is not None:
+            old_parent.removeEventFilter(self)
+        self.setParent(new_parent)
+        new_parent.installEventFilter(self)
+        self._reposition()
+        self.show()
 
     def _reposition(self) -> None:
         parent = self.parentWidget()

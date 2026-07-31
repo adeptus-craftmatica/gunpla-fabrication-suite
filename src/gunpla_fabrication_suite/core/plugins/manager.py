@@ -10,7 +10,10 @@ from __future__ import annotations
 import importlib
 
 from gunpla_fabrication_suite.core.events import EventBus
+from gunpla_fabrication_suite.core.jobs import BackgroundJobManager
+from gunpla_fabrication_suite.core.layout import LayoutManager
 from gunpla_fabrication_suite.core.logging import get_logger
+from gunpla_fabrication_suite.core.navigation import Navigator
 from gunpla_fabrication_suite.core.notifications import NotificationCenter, NotificationSeverity
 from gunpla_fabrication_suite.core.paths import ApplicationPaths
 from gunpla_fabrication_suite.core.persistence import DatabaseService
@@ -20,6 +23,7 @@ from gunpla_fabrication_suite.core.plugins.discovery import (
 )
 from gunpla_fabrication_suite.core.plugins.records import PluginHealth, PluginRecord, PluginStatus
 from gunpla_fabrication_suite.core.services import ServiceContainer
+from gunpla_fabrication_suite.core.theming import ThemeManager
 from gunpla_fabrication_suite.plugin_sdk.context import PluginContext
 from gunpla_fabrication_suite.plugin_sdk.interface import PluginInterface
 from gunpla_fabrication_suite.plugin_sdk.registries import (
@@ -27,6 +31,7 @@ from gunpla_fabrication_suite.plugin_sdk.registries import (
     DashboardWidgetRegistry,
     NavigationRegistry,
 )
+from gunpla_fabrication_suite.shared_ui import InspectorPanel
 
 _logger = get_logger("plugins")
 
@@ -45,6 +50,11 @@ class PluginManager:
         events: EventBus,
         database: DatabaseService,
         notifications: NotificationCenter,
+        jobs: BackgroundJobManager,
+        navigator: Navigator,
+        theme_manager: ThemeManager,
+        layout_manager: LayoutManager,
+        inspector: InspectorPanel,
         paths: ApplicationPaths,
         navigation: NavigationRegistry,
         dashboard_widgets: DashboardWidgetRegistry,
@@ -55,6 +65,11 @@ class PluginManager:
         self._events = events
         self._database = database
         self._notifications = notifications
+        self._jobs = jobs
+        self._navigator = navigator
+        self._theme_manager = theme_manager
+        self._layout_manager = layout_manager
+        self._inspector = inspector
         self._paths = paths
         self._navigation = navigation
         self._dashboard_widgets = dashboard_widgets
@@ -138,6 +153,11 @@ class PluginManager:
             events=self._events,
             database=self._database,
             notifications=self._notifications,
+            jobs=self._jobs,
+            navigator=self._navigator,
+            theme_manager=self._theme_manager,
+            layout_manager=self._layout_manager,
+            inspector=self._inspector,
             paths=self._paths,
             navigation=self._navigation,
             dashboard_widgets=self._dashboard_widgets,

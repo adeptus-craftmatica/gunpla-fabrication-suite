@@ -24,7 +24,7 @@ class DashboardPlugin:
             NavigationPageContribution(
                 page_id="dashboard",
                 title="Dashboard",
-                factory=lambda: DashboardPage(context.dashboard_widgets),
+                factory=lambda: DashboardPage(context.dashboard_widgets, context.layout_manager),
                 section="main",
                 order=0,
             ),

@@ -4,10 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QProgressBar,
     QPushButton,
@@ -15,10 +13,13 @@ from PySide6.QtWidgets import (
     QSplitter,
     QTableWidget,
     QTableWidgetItem,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
 
+from gunpla_fabrication_suite.core.jobs import BackgroundJobManager
+from gunpla_fabrication_suite.core.layout import COMMAND_DECK, LayoutManager
 from gunpla_fabrication_suite.core.notifications import NotificationCenter, NotificationSeverity
 from gunpla_fabrication_suite.plugins.build_planner.errors import BuildNotFoundError
 from gunpla_fabrication_suite.plugins.build_planner.models.enums import BuildStatus
@@ -33,8 +34,19 @@ from gunpla_fabrication_suite.plugins.build_planner.ui.journal_widget import Jou
 from gunpla_fabrication_suite.plugins.build_planner.ui.stage_tree_widget import StageTreeWidget
 from gunpla_fabrication_suite.plugins.build_planner.ui.timer_widget import TimerWidget
 from gunpla_fabrication_suite.plugins.kit_library.services.kit_service import KitService
-from gunpla_fabrication_suite.shared_ui import confirm_destructive_action
-from gunpla_fabrication_suite.themes import PALETTE
+from gunpla_fabrication_suite.plugins.photography.models.entity_types import PhotoEntityType
+from gunpla_fabrication_suite.plugins.photography.services.photo_service import PhotoService
+from gunpla_fabrication_suite.plugins.photography.ui.photo_gallery_widget import PhotoGalleryWidget
+from gunpla_fabrication_suite.shared_ui import (
+    SPACING,
+    ButtonKind,
+    Card,
+    PageHeader,
+    configure_table_columns,
+    confirm_destructive_action,
+    set_button_kind,
+    set_label_role,
+)
 
 _STATUS_LABELS = {status: status.value.replace("_", " ").title() for status in BuildStatus}
 
@@ -49,7 +61,10 @@ class BuildDetailView(QWidget):
         work_session_service: WorkSessionService,
         journal_service: JournalService,
         kit_service: KitService,
+        photo_service: PhotoService,
+        jobs: BackgroundJobManager,
         notifications: NotificationCenter,
+        layout_manager: LayoutManager,
         build_id: str,
         on_back: Callable[[], None],
         parent: QWidget | None = None,
@@ -59,6 +74,7 @@ class BuildDetailView(QWidget):
         self._work_session_service = work_session_service
         self._kit_service = kit_service
         self._notifications = notifications
+        self._layout_manager = layout_manager
         self._build_id = build_id
         self._on_back = on_back
 
@@ -67,28 +83,25 @@ class BuildDetailView(QWidget):
         outer.setSpacing(12)
 
         back_button = QPushButton("← All Builds")
-        back_button.setFlat(True)
+        set_button_kind(back_button, "ghost")
         back_button.clicked.connect(self._on_back)
-        outer.addWidget(back_button, alignment=Qt.AlignmentFlag.AlignLeft)
-
-        header_row = QHBoxLayout()
-        self._title_label = QLabel()
-        self._title_label.setStyleSheet("font-size: 22px; font-weight: 600;")
-        header_row.addWidget(self._title_label)
-        header_row.addStretch(1)
 
         edit_button = QPushButton("Edit Details")
+        set_button_kind(edit_button, "secondary")
         edit_button.clicked.connect(self._on_edit_details)
-        header_row.addWidget(edit_button)
-        outer.addLayout(header_row)
+
+        self._header = PageHeader("", leading=back_button, actions=[edit_button])
+        self._title_label = self._header.title_label
+        outer.addWidget(self._header)
 
         self._kit_label = QLabel()
-        self._kit_label.setStyleSheet(f"color: {PALETTE.text_secondary};")
+        set_label_role(self._kit_label, "secondary")
         outer.addWidget(self._kit_label)
 
         progress_row = QHBoxLayout()
         self._progress_bar = QProgressBar()
         self._progress_bar.setRange(0, 100)
+        self._progress_bar.setTextVisible(False)  # _progress_label shows the % instead
         progress_row.addWidget(self._progress_bar, stretch=1)
         self._progress_label = QLabel()
         progress_row.addWidget(self._progress_label)
@@ -104,41 +117,97 @@ class BuildDetailView(QWidget):
         outer.addWidget(splitter, stretch=1)
 
         self._stage_tree = StageTreeWidget(build_service, build_id, on_changed=self._refresh_header)
-        splitter.addWidget(self._stage_tree)
+        stage_card = Card()
+        stage_card.add_widget(self._stage_tree, stretch=1)
+        splitter.addWidget(stage_card)
 
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
+        right_layout.setContentsMargins(0, 0, 0, 0)
 
         self._timer_widget = TimerWidget(
             work_session_service, build_id, notifications, on_changed=self._on_timer_changed
         )
-        right_layout.addWidget(self._timer_widget)
+        timer_card = Card()
+        timer_card.add_widget(self._timer_widget)
 
         sessions_label = QLabel("Recent Sessions")
-        sessions_label.setStyleSheet("font-weight: 600; margin-top: 8px;")
-        right_layout.addWidget(sessions_label)
+        set_label_role(sessions_label, "section-title")
+        timer_card.add_widget(sessions_label)
 
         self._sessions_table = QTableWidget(0, 3)
         self._sessions_table.setHorizontalHeaderLabels(["Started", "Duration", "Notes"])
-        self._sessions_table.horizontalHeader().setSectionResizeMode(
-            2, QHeaderView.ResizeMode.Stretch
-        )
         self._sessions_table.verticalHeader().setVisible(False)
         self._sessions_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self._sessions_table.setMaximumHeight(160)
-        right_layout.addWidget(self._sessions_table)
+        timer_card.add_widget(self._sessions_table)
+        right_layout.addWidget(timer_card)
 
         self._journal_widget = JournalWidget(journal_service, build_id)
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setWidget(self._journal_widget)
-        right_layout.addWidget(scroll_area, stretch=1)
+        self._journal_scroll = QScrollArea()
+        self._journal_scroll.setWidgetResizable(True)
+        self._journal_scroll.setWidget(self._journal_widget)
+
+        self._photo_gallery = PhotoGalleryWidget(
+            photo_service=photo_service,
+            jobs=jobs,
+            notifications=notifications,
+            entity_type=PhotoEntityType.BUILD.value,
+            entity_id=build_id,
+        )
+
+        self._right_layout = right_layout
+        self._journal_photos_section: QWidget | None = None
+        self._rebuild_journal_photos_section()
 
         splitter.addWidget(right_panel)
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 1)
 
+        layout_manager.layout_changed.connect(self._on_layout_changed)
         self.refresh()
+
+    def _on_layout_changed(self, _layout_id: str) -> None:
+        self._rebuild_journal_photos_section()
+
+    def _rebuild_journal_photos_section(self) -> None:
+        old_section = self._journal_photos_section
+        if old_section is not None:
+            self._right_layout.removeWidget(old_section)
+            old_section.setParent(None)
+            old_section.deleteLater()
+
+        if self._layout_manager.current == COMMAND_DECK:
+            # Command Deck's extra width has no tab bar competing for
+            # attention, so Journal and Photos are both always visible,
+            # stacked, instead of hidden behind tabs.
+            section: QWidget = QWidget()
+            section_layout = QVBoxLayout(section)
+            section_layout.setContentsMargins(0, 0, 0, 0)
+            section_layout.setSpacing(SPACING.sm)
+
+            journal_card = Card("Journal")
+            journal_card.add_widget(self._journal_scroll, stretch=1)
+            section_layout.addWidget(journal_card, 1)
+
+            photos_card = Card("Photos")
+            photos_card.add_widget(self._photo_gallery, stretch=1)
+            section_layout.addWidget(photos_card, 1)
+        else:
+            tabs = QTabWidget()
+            tabs.addTab(self._journal_scroll, "Journal")
+            tabs.addTab(self._photo_gallery, "Photos")
+            section = Card()
+            section.add_widget(tabs, stretch=1)
+
+        self._journal_photos_section = section
+        self._right_layout.addWidget(section, 1)
+        # Tearing down the old section's setParent(None) hide()-cascades down
+        # to these two reused, live widgets, explicitly marking them hidden —
+        # reparenting them into the new section doesn't clear that flag, so
+        # they must be shown again explicitly or they render as empty space.
+        self._journal_scroll.show()
+        self._photo_gallery.show()
 
     def refresh(self) -> None:
         """Reload everything from the database."""
@@ -170,6 +239,7 @@ class BuildDetailView(QWidget):
         self._timer_widget.refresh()
         self._refresh_sessions_table()
         self._journal_widget.refresh()
+        self._photo_gallery.refresh()
 
     def _refresh_header(self) -> None:
         self.refresh()
@@ -192,22 +262,23 @@ class BuildDetailView(QWidget):
         status = BuildStatus(build.status)
 
         if status == BuildStatus.PLANNING:
-            self._add_action("Start Build", self._on_start)
+            self._add_action("Start Build", self._on_start, "primary")
         if status in (BuildStatus.PAUSED, BuildStatus.WAITING_ON_SUPPLIES):
-            self._add_action("Resume Build", self._on_resume)
+            self._add_action("Resume Build", self._on_resume, "primary")
         if status == BuildStatus.IN_PROGRESS:
-            self._add_action("Pause Build", self._on_pause)
+            self._add_action("Pause Build", self._on_pause, "secondary")
         if status != BuildStatus.COMPLETED and not build.is_deleted:
-            self._add_action("Mark Completed", self._on_mark_completed)
+            self._add_action("Mark Completed", self._on_mark_completed, "secondary")
         if not build.is_deleted:
-            self._add_action("Archive", self._on_archive)
+            self._add_action("Archive", self._on_archive, "danger")
         else:
-            self._add_action("Restore", self._on_restore)
+            self._add_action("Restore", self._on_restore, "secondary")
 
         self._actions_row.addStretch(1)
 
-    def _add_action(self, label: str, callback: Callable[[], None]) -> None:
+    def _add_action(self, label: str, callback: Callable[[], None], kind: ButtonKind) -> None:
         button = QPushButton(label)
+        set_button_kind(button, kind)
         button.clicked.connect(callback)
         self._actions_row.addWidget(button)
 
@@ -223,6 +294,7 @@ class BuildDetailView(QWidget):
             self._sessions_table.setItem(row, 0, QTableWidgetItem(started))
             self._sessions_table.setItem(row, 1, QTableWidgetItem(duration))
             self._sessions_table.setItem(row, 2, QTableWidgetItem(session.notes or ""))
+        configure_table_columns(self._sessions_table, stretch_column=2)
 
     def _on_edit_details(self) -> None:
         dialog = EditBuildDetailsDialog(self._current_build, parent=self)

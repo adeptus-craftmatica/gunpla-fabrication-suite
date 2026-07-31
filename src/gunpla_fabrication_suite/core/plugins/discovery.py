@@ -25,6 +25,9 @@ MODEL_MODULES: tuple[str, ...] = (
     "gunpla_fabrication_suite.plugins.build_planner.models.build_task",
     "gunpla_fabrication_suite.plugins.build_planner.models.work_session",
     "gunpla_fabrication_suite.plugins.build_planner.models.journal_entry",
+    "gunpla_fabrication_suite.plugins.photography.models.photo",
+    "gunpla_fabrication_suite.plugins.photography.models.photo_relationship",
+    "gunpla_fabrication_suite.plugins.supplies.models.supply",
 )
 
 
@@ -39,6 +42,25 @@ class DiscoveredPlugin:
 
 
 def _builtin_plugins_root() -> Path:
+    """Locate the ``plugins/`` directory holding each built-in plugin's ``manifest.toml``.
+
+    A frozen PyInstaller build has no source tree: ``plugins_package.__file__``
+    points at a synthetic path inside the bundled ``PYZ`` archive, not a real,
+    listable directory. Each plugin's ``manifest.toml`` is bundled separately
+    as plain *data* (see ``datas`` in ``gunpla_fabrication_suite.spec``),
+    extracted to a real directory at ``sys._MEIPASS`` — mirroring
+    ``resolve_migrations_root`` in ``core.persistence.migrations``, which
+    hits the exact same problem for the same reason.
+    """
+    if getattr(sys, "frozen", False):
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass is None:
+            raise RuntimeError(
+                "Running as a frozen build but sys._MEIPASS is unset — "
+                "this PyInstaller build is not configured as expected."
+            )
+        return Path(meipass) / "gunpla_fabrication_suite" / "plugins"
+
     from gunpla_fabrication_suite import plugins as plugins_package
 
     return Path(plugins_package.__file__).parent

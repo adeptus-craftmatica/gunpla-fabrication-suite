@@ -15,7 +15,6 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QGridLayout,
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QPushButton,
     QScrollArea,
@@ -26,13 +25,20 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from gunpla_fabrication_suite.core.layout import COMMAND_DECK, LayoutManager
 from gunpla_fabrication_suite.plugins.build_planner.models.enums import BuildStatus
 from gunpla_fabrication_suite.plugins.build_planner.schemas import BuildProjectRead
 from gunpla_fabrication_suite.plugins.build_planner.services.build_service import BuildService
 from gunpla_fabrication_suite.plugins.build_planner.ui.new_build_dialog import NewBuildDialog
 from gunpla_fabrication_suite.plugins.kit_library.services.kit_service import KitService
-from gunpla_fabrication_suite.shared_ui import EmptyStateWidget
-from gunpla_fabrication_suite.themes import PALETTE
+from gunpla_fabrication_suite.shared_ui import (
+    Card,
+    EmptyStateWidget,
+    PageHeader,
+    configure_table_columns,
+    set_button_kind,
+    set_label_role,
+)
 
 _TABLE_COLUMNS = ("Title", "Status", "Progress", "Commission")
 _KANBAN_COLUMNS = (
@@ -51,6 +57,7 @@ class BuildListView(QWidget):
         self,
         build_service: BuildService,
         kit_service: KitService,
+        layout_manager: LayoutManager,
         *,
         on_select: Callable[[str], None],
         parent: QWidget | None = None,
@@ -58,6 +65,7 @@ class BuildListView(QWidget):
         super().__init__(parent)
         self._build_service = build_service
         self._kit_service = kit_service
+        self._layout_manager = layout_manager
         self._on_select = on_select
         self._builds: list[BuildProjectRead] = []
 
@@ -65,20 +73,17 @@ class BuildListView(QWidget):
         outer.setContentsMargins(24, 24, 24, 24)
         outer.setSpacing(12)
 
-        header_row = QHBoxLayout()
-        title = QLabel("Build Planner")
-        title.setStyleSheet("font-size: 22px; font-weight: 600;")
-        header_row.addWidget(title)
-        header_row.addStretch(1)
-
         new_build_button = QPushButton("New Build")
-        new_build_button.setDefault(True)
+        set_button_kind(new_build_button, "primary")
         new_build_button.clicked.connect(self._on_new_build)
-        header_row.addWidget(new_build_button)
-        outer.addLayout(header_row)
+        outer.addWidget(PageHeader("Build Planner", actions=[new_build_button]))
 
         toolbar_row = QHBoxLayout()
         self._kanban_checkbox = QCheckBox("Kanban view")
+        # Command Deck defaults to Kanban — its wide, rail-free layout suits
+        # a board overview; Rail defaults to the table. Either can still be
+        # toggled manually regardless of which layout is active.
+        self._kanban_checkbox.setChecked(layout_manager.current == COMMAND_DECK)
         self._kanban_checkbox.toggled.connect(self._refresh_view)
         toolbar_row.addWidget(self._kanban_checkbox)
 
@@ -88,12 +93,11 @@ class BuildListView(QWidget):
         toolbar_row.addStretch(1)
         outer.addLayout(toolbar_row)
 
-        self._stack = QStackedLayout()
-        outer.addLayout(self._stack, stretch=1)
+        stack_container = QWidget()
+        self._stack = QStackedLayout(stack_container)
 
         self._table = QTableWidget(0, len(_TABLE_COLUMNS))
         self._table.setHorizontalHeaderLabels(_TABLE_COLUMNS)
-        self._table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self._table.verticalHeader().setVisible(False)
         self._table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self._table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
@@ -114,7 +118,15 @@ class BuildListView(QWidget):
         )
         self._stack.addWidget(self._empty_state)
 
+        card = Card()
+        card.add_widget(stack_container, stretch=1)
+        outer.addWidget(card, 1)
+
+        layout_manager.layout_changed.connect(self._on_layout_changed)
         self.refresh()
+
+    def _on_layout_changed(self, layout_id: str) -> None:
+        self._kanban_checkbox.setChecked(layout_id == COMMAND_DECK)
 
     def refresh(self) -> None:
         """Reload the build list from the database."""
@@ -146,6 +158,8 @@ class BuildListView(QWidget):
             self._set_row_item(row, 2, f"{build.progress_percent}%", build)
             self._set_row_item(row, 3, "Yes" if build.is_commission else "—", build)
 
+        configure_table_columns(self._table, stretch_column=0)
+
     def _set_row_item(self, row: int, column: int, text: str, build: BuildProjectRead) -> None:
         item = QTableWidgetItem(text)
         item.setData(Qt.ItemDataRole.UserRole, build.id)
@@ -169,16 +183,15 @@ class BuildListView(QWidget):
 
     def _build_kanban_column(self, status: BuildStatus) -> QWidget:
         column = QWidget()
+        # Background/border come from the #kanbanColumn rule in
+        # themes/base.py's global stylesheet, so they stay correct across a
+        # live theme switch.
         column.setObjectName("kanbanColumn")
-        column.setStyleSheet(
-            f"#kanbanColumn {{ background-color: {PALETTE.surface}; "
-            f"border: 1px solid {PALETTE.border}; border-radius: 6px; }}"
-        )
         column.setFixedWidth(220)
         layout = QVBoxLayout(column)
 
         label = QLabel(status.value.replace("_", " ").title())
-        label.setStyleSheet(f"font-weight: 600; color: {PALETTE.text_secondary}; border: none;")
+        set_label_role(label, "section-title")
         layout.addWidget(label)
 
         matching = [build for build in self._builds if build.status == status.value]
@@ -189,10 +202,9 @@ class BuildListView(QWidget):
 
     def _build_kanban_card(self, build: BuildProjectRead) -> QWidget:
         card = QPushButton(f"{build.title}\n{build.progress_percent}%")
-        card.setStyleSheet(
-            f"text-align: left; padding: 8px; background-color: {PALETTE.surface_raised}; "
-            f"border: 1px solid {PALETTE.border}; border-radius: 4px;"
-        )
+        # Styled via the #kanbanCard rule in themes/base.py's global
+        # stylesheet — see _build_kanban_column's comment.
+        card.setObjectName("kanbanCard")
         card.clicked.connect(lambda: self._on_select(build.id))
         return card
 

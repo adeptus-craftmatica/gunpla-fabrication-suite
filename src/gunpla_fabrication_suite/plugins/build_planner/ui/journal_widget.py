@@ -7,7 +7,6 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QPlainTextEdit, QPushButton, 
 from gunpla_fabrication_suite.plugins.build_planner.schemas import JournalEntryCreate
 from gunpla_fabrication_suite.plugins.build_planner.services.journal_service import JournalService
 from gunpla_fabrication_suite.shared_ui import EmptyStateWidget
-from gunpla_fabrication_suite.themes import PALETTE
 
 
 class JournalWidget(QWidget):
@@ -72,10 +71,7 @@ class JournalWidget(QWidget):
             timestamp = entry.created_at.strftime("%b %d, %Y  %H:%M")
             entry_label = QLabel(f"{timestamp}\n{entry.note}")
             entry_label.setWordWrap(True)
-            entry_label.setStyleSheet(
-                f"padding: 8px; background-color: {PALETTE.surface}; "
-                f"border: 1px solid {PALETTE.border}; border-radius: 4px;"
-            )
+            entry_label.setObjectName("journalEntry")
             self._feed_layout.addWidget(entry_label)
 
     def _on_add(self) -> None:

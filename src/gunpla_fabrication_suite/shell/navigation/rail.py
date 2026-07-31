@@ -6,7 +6,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QButtonGroup, QPushButton, QVBoxLayout, QWidget
 
 from gunpla_fabrication_suite.plugin_sdk.registries import NavigationRegistry
-from gunpla_fabrication_suite.themes import PALETTE
+from gunpla_fabrication_suite.shared_ui.buttons import set_button_kind
 
 
 class NavigationRail(QWidget):
@@ -16,16 +16,15 @@ class NavigationRail(QWidget):
 
     def __init__(self, registry: NavigationRegistry, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        # Background/border come from the #navigationRail rule in
+        # themes/base.py's global stylesheet, so they stay correct across a
+        # live theme switch.
         self.setObjectName("navigationRail")
-        self.setStyleSheet(
-            f"#navigationRail {{ background-color: {PALETTE.surface}; "
-            f"border-right: 1px solid {PALETTE.border}; }}"
-        )
-        self.setFixedWidth(200)
+        self.setFixedWidth(220)
 
         self._layout = QVBoxLayout(self)
-        self._layout.setContentsMargins(8, 12, 8, 12)
-        self._layout.setSpacing(2)
+        self._layout.setContentsMargins(12, 16, 12, 16)
+        self._layout.setSpacing(4)
         self._layout.addStretch(1)
 
         self._button_group = QButtonGroup(self)
@@ -57,13 +56,7 @@ class NavigationRail(QWidget):
                 button.setIcon(page.icon)
             button.setCheckable(True)
             button.setFlat(True)
-            button.setStyleSheet(
-                "QPushButton { text-align: left; padding: 8px 10px; "
-                "border: none; border-radius: 4px; }"
-                f"QPushButton:checked {{ background-color: {PALETTE.surface_raised}; "
-                f"border-left: 3px solid {PALETTE.accent}; }}"
-                f"QPushButton:hover {{ background-color: {PALETTE.surface_raised}; }}"
-            )
+            set_button_kind(button, "nav")
             button.setAccessibleName(page.title)
             button.clicked.connect(
                 lambda _checked, page_id=page.page_id: self.page_selected.emit(page_id)

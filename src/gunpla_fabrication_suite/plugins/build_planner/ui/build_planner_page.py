@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import QStackedLayout, QWidget
 
+from gunpla_fabrication_suite.core.jobs import BackgroundJobManager
+from gunpla_fabrication_suite.core.layout import LayoutManager
 from gunpla_fabrication_suite.core.notifications import NotificationCenter
 from gunpla_fabrication_suite.plugins.build_planner.services.build_service import BuildService
 from gunpla_fabrication_suite.plugins.build_planner.services.journal_service import JournalService
@@ -13,6 +15,7 @@ from gunpla_fabrication_suite.plugins.build_planner.services.work_session_servic
 from gunpla_fabrication_suite.plugins.build_planner.ui.build_detail_view import BuildDetailView
 from gunpla_fabrication_suite.plugins.build_planner.ui.build_list_view import BuildListView
 from gunpla_fabrication_suite.plugins.kit_library.services.kit_service import KitService
+from gunpla_fabrication_suite.plugins.photography.services.photo_service import PhotoService
 
 
 class BuildPlannerPage(QWidget):
@@ -30,7 +33,10 @@ class BuildPlannerPage(QWidget):
         work_session_service: WorkSessionService,
         journal_service: JournalService,
         kit_service: KitService,
+        photo_service: PhotoService,
+        jobs: BackgroundJobManager,
         notifications: NotificationCenter,
+        layout_manager: LayoutManager,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -38,12 +44,17 @@ class BuildPlannerPage(QWidget):
         self._work_session_service = work_session_service
         self._journal_service = journal_service
         self._kit_service = kit_service
+        self._photo_service = photo_service
+        self._jobs = jobs
         self._notifications = notifications
+        self._layout_manager = layout_manager
 
         self._stack = QStackedLayout(self)
         self._detail_view: BuildDetailView | None = None
 
-        self._list_view = BuildListView(build_service, kit_service, on_select=self.show_build)
+        self._list_view = BuildListView(
+            build_service, kit_service, layout_manager, on_select=self.show_build
+        )
         self._stack.addWidget(self._list_view)
 
     def show_build(self, build_id: str) -> None:
@@ -55,7 +66,10 @@ class BuildPlannerPage(QWidget):
             work_session_service=self._work_session_service,
             journal_service=self._journal_service,
             kit_service=self._kit_service,
+            photo_service=self._photo_service,
+            jobs=self._jobs,
             notifications=self._notifications,
+            layout_manager=self._layout_manager,
             build_id=build_id,
             on_back=self.show_list,
         )

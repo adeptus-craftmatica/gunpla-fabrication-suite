@@ -8,7 +8,8 @@ from PySide6.QtCore import QRect, Qt
 from PySide6.QtGui import QFontMetrics, QResizeEvent
 from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
-from gunpla_fabrication_suite.themes import PALETTE
+from gunpla_fabrication_suite.shared_ui.buttons import set_button_kind
+from gunpla_fabrication_suite.shared_ui.labels import set_label_role
 
 _DESCRIPTION_MAX_WIDTH = 360
 _DESCRIPTION_MIN_WIDTH = 120
@@ -40,16 +41,15 @@ class EmptyStateWidget(QWidget):
 
         title_label = QLabel(title)
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet(
-            f"font-size: 16px; font-weight: 600; color: {PALETTE.text_primary};"
-        )
+        # No color override: inherits the theme's primary text color already.
+        title_label.setStyleSheet("font-size: 16px; font-weight: 600;")
         layout.addWidget(title_label)
 
         if description:
             description_label = QLabel(description)
             description_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             description_label.setWordWrap(True)
-            description_label.setStyleSheet(f"color: {PALETTE.text_secondary};")
+            set_label_role(description_label, "secondary")
             layout.addWidget(description_label)
             self._description_label = description_label
             # QLabel's own wordWrap height-for-width resolution turned out to
@@ -65,7 +65,7 @@ class EmptyStateWidget(QWidget):
 
         if action_label and on_action is not None:
             action_button = QPushButton(action_label)
-            action_button.setDefault(True)
+            set_button_kind(action_button, "primary")
             action_button.clicked.connect(on_action)
             layout.addWidget(action_button, alignment=Qt.AlignmentFlag.AlignCenter)
 

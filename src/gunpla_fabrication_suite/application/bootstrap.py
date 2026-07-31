@@ -17,20 +17,23 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 
 from gunpla_fabrication_suite.core.events import EventBus
 from gunpla_fabrication_suite.core.jobs import BackgroundJobManager
+from gunpla_fabrication_suite.core.layout import LayoutManager
 from gunpla_fabrication_suite.core.logging import configure_logging, get_logger
+from gunpla_fabrication_suite.core.navigation import Navigator
 from gunpla_fabrication_suite.core.notifications import NotificationCenter
 from gunpla_fabrication_suite.core.paths import resolve_application_paths
 from gunpla_fabrication_suite.core.persistence import DatabaseService
 from gunpla_fabrication_suite.core.plugins import PluginManager
 from gunpla_fabrication_suite.core.services import ServiceContainer
 from gunpla_fabrication_suite.core.settings import SettingsService
+from gunpla_fabrication_suite.core.theming import ThemeManager
 from gunpla_fabrication_suite.plugin_sdk.registries import (
     CommandRegistry,
     DashboardWidgetRegistry,
     NavigationRegistry,
 )
+from gunpla_fabrication_suite.shared_ui import InspectorPanel
 from gunpla_fabrication_suite.shell.main_window import MainWindow, configure_qsettings_identity
-from gunpla_fabrication_suite.themes import apply_dark_theme
 
 _logger = get_logger("startup")
 
@@ -46,7 +49,12 @@ def run_application(argv: list[str] | None = None) -> int:
 
     configure_qsettings_identity()
     app = QApplication(argv if argv is not None else sys.argv)
-    apply_dark_theme(app)
+    theme_manager = ThemeManager(app, settings_service)
+    layout_manager = LayoutManager(settings_service)
+    # Constructed here (not in MainWindow) so a plugin's page factory can
+    # push contextual details into it via PluginContext.inspector — plugin
+    # discovery below happens before MainWindow ever exists.
+    inspector = InspectorPanel()
 
     loop = qasync.QEventLoop(app)
     asyncio.set_event_loop(loop)
@@ -61,6 +69,7 @@ def run_application(argv: list[str] | None = None) -> int:
     events = EventBus()
     notifications = NotificationCenter()
     jobs = BackgroundJobManager()
+    navigator = Navigator()
 
     navigation = NavigationRegistry()
     dashboard_widgets = DashboardWidgetRegistry()
@@ -72,6 +81,11 @@ def run_application(argv: list[str] | None = None) -> int:
         events=events,
         database=database,
         notifications=notifications,
+        jobs=jobs,
+        navigator=navigator,
+        theme_manager=theme_manager,
+        layout_manager=layout_manager,
+        inspector=inspector,
         paths=paths,
         navigation=navigation,
         dashboard_widgets=dashboard_widgets,
@@ -89,6 +103,10 @@ def run_application(argv: list[str] | None = None) -> int:
             database=database,
             notifications=notifications,
             jobs=jobs,
+            navigator=navigator,
+            theme_manager=theme_manager,
+            layout_manager=layout_manager,
+            inspector=inspector,
             paths=paths,
             settings_service=settings_service,
         )

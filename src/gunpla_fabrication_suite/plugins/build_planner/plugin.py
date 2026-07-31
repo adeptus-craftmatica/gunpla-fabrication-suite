@@ -26,6 +26,7 @@ from gunpla_fabrication_suite.plugins.build_planner.ui.continue_building_widget 
     ContinueBuildingWidget,
 )
 from gunpla_fabrication_suite.plugins.kit_library.services.kit_service import KitService
+from gunpla_fabrication_suite.plugins.photography.services.photo_service import PhotoService
 
 PLUGIN_ID = "com.adeptuscraftmatica.gfs.build_planner"
 
@@ -33,10 +34,11 @@ PLUGIN_ID = "com.adeptuscraftmatica.gfs.build_planner"
 class BuildPlannerPlugin:
     """Owns build tracking: models, repositories, services, and UI.
 
-    Depends on Kit Library and resolves its ``KitService`` through the
-    shared service container (see ``manifest.toml``'s ``dependencies``,
-    which guarantees Kit Library has already registered that service by
-    the time this plugin's ``initialize()`` runs).
+    Depends on Kit Library and Photography, and resolves their ``KitService``
+    and ``PhotoService`` through the shared service container (see
+    ``manifest.toml``'s ``dependencies``, which guarantees both have already
+    registered those services by the time this plugin's ``initialize()``
+    runs).
     """
 
     plugin_id = PLUGIN_ID
@@ -47,6 +49,7 @@ class BuildPlannerPlugin:
         self._work_session_service: WorkSessionService | None = None
         self._journal_service: JournalService | None = None
         self._kit_service: KitService | None = None
+        self._photo_service: PhotoService | None = None
         self._page: BuildPlannerPage | None = None
 
     def register(self, context: PluginContext) -> None:
@@ -77,8 +80,9 @@ class BuildPlannerPlugin:
         """Construct services and the shared Build Planner page.
 
         Raises:
-            RuntimeError: If Kit Library's ``KitService`` was not published
-                (it should always be, given the declared dependency).
+            RuntimeError: If Kit Library's ``KitService`` or Photography's
+                ``PhotoService`` was not published (either should always be,
+                given the declared dependencies).
         """
         if self._context is None:
             raise RuntimeError("initialize() called before register()")
@@ -90,6 +94,14 @@ class BuildPlannerPlugin:
                 "which was not found in the service container."
             )
         self._kit_service = kit_service
+
+        photo_service = self._context.services.try_resolve(PhotoService)
+        if photo_service is None:
+            raise RuntimeError(
+                "Build Planner requires the Photography plugin's PhotoService, "
+                "which was not found in the service container."
+            )
+        self._photo_service = photo_service
 
         self._build_service = BuildService(
             BuildRepository(self._context.database), kit_service, self._context.events
@@ -104,7 +116,10 @@ class BuildPlannerPlugin:
             work_session_service=self._work_session_service,
             journal_service=self._journal_service,
             kit_service=kit_service,
+            photo_service=photo_service,
+            jobs=self._context.jobs,
             notifications=self._context.notifications,
+            layout_manager=self._context.layout_manager,
         )
 
     def start(self) -> None:
@@ -128,5 +143,5 @@ class BuildPlannerPlugin:
             and self._context is not None
         )
         return ContinueBuildingWidget(
-            self._build_service, self._kit_service, self._page, self._context.notifications
+            self._build_service, self._kit_service, self._page, self._context.navigator
         )

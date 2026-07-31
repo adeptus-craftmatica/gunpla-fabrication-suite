@@ -9,11 +9,25 @@ layout ever runs.
 
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget
 
 from gunpla_fabrication_suite.core.notifications import NotificationCenter, NotificationSeverity
 from gunpla_fabrication_suite.shared_ui.toast import _TOAST_WIDTH, ToastOverlay, _ToastCard
-from gunpla_fabrication_suite.themes import apply_dark_theme
+from gunpla_fabrication_suite.themes import WORKSHOP_DARK, apply_theme
+
+
+def test_overlay_is_transparent_for_mouse_events(qtbot) -> None:
+    """Regression: the overlay covers the entire shell window (see _reposition),
+    so if it isn't click-through, it silently swallows every click across the
+    whole app the moment it's constructed — not just clicks meant for a toast."""
+    host = QWidget()
+    qtbot.addWidget(host)
+    host.show()
+
+    overlay = ToastOverlay(host)
+
+    assert overlay.testAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents) is True
 
 
 def test_toast_card_width_is_fixed_before_layout_runs(qtbot) -> None:
@@ -48,7 +62,7 @@ def test_overlay_shows_notification_at_full_height(qtbot, qapp) -> None:
     # The real app always applies its theme (which fixes font-size) before any
     # window exists — matching that here avoids font-metric timing quirks that
     # only occur with Qt's unthemed default fonts and don't reflect production.
-    apply_dark_theme(qapp)
+    apply_theme(qapp, WORKSHOP_DARK)
 
     host = QWidget()
     host.resize(500, 800)

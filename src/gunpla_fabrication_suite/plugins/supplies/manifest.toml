@@ -1,0 +1,16 @@
+id = "com.adeptuscraftmatica.gfs.supplies"
+name = "Supplies"
+version = "1.0.0"
+api_version = "1"
+entry_point = "plugin:SuppliesPlugin"
+description = "Paint, cement, tools, and other hobby-supply inventory, with low-stock alerts."
+author = "Adeptus Craftmatica"
+
+dependencies = []
+optional_dependencies = []
+
+permissions = [
+    "database.read",
+    "database.write",
+    "notifications.publish",
+]

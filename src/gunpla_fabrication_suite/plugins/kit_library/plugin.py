@@ -72,7 +72,12 @@ class KitLibraryPlugin:
 
     def _build_page(self) -> KitLibraryPage:
         assert self._service is not None and self._context is not None
-        return KitLibraryPage(self._service, self._context.notifications)
+        return KitLibraryPage(
+            self._service,
+            self._context.notifications,
+            self._context.layout_manager,
+            self._context.inspector,
+        )
 
     def _build_backlog_widget(self) -> BacklogCountWidget:
         assert self._service is not None

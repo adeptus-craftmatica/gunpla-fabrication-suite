@@ -95,7 +95,7 @@ class StageTreeWidget(QWidget):
         try:
             self._tree.clear()
             for stage in self._service.list_stages(self._build_id):
-                stage_item = QTreeWidgetItem([f"{stage.name}  (weight {stage.weight})", "", ""])
+                stage_item = QTreeWidgetItem([stage.name, "", ""])
                 stage_item.setFlags(stage_item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                 stage_item.setCheckState(
                     0, Qt.CheckState.Checked if stage.is_completed else Qt.CheckState.Unchecked

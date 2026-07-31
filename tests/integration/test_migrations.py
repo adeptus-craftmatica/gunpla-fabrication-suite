@@ -21,6 +21,7 @@ def test_migrate_creates_expected_tables(app_paths) -> None:
         "build_planner_work_sessions",
         "build_planner_journal_entries",
     } <= table_names
+    assert {"photography_photos", "photography_photo_relationships"} <= table_names
     db.dispose()
 
 

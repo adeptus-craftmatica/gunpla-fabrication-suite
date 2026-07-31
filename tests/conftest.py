@@ -9,8 +9,13 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import pytest
 
 from gunpla_fabrication_suite.core.events import EventBus
+from gunpla_fabrication_suite.core.jobs import BackgroundJobManager
+from gunpla_fabrication_suite.core.layout import LayoutManager
+from gunpla_fabrication_suite.core.navigation import Navigator
 from gunpla_fabrication_suite.core.paths import ApplicationPaths
 from gunpla_fabrication_suite.core.persistence import DatabaseService
+from gunpla_fabrication_suite.core.settings import SettingsService
+from gunpla_fabrication_suite.core.theming import ThemeManager
 from gunpla_fabrication_suite.plugins.build_planner.repositories.build_repository import (
     BuildRepository,
 )
@@ -28,6 +33,9 @@ from gunpla_fabrication_suite.plugins.build_planner.services.work_session_servic
 from gunpla_fabrication_suite.plugins.kit_library.repositories.kit_repository import KitRepository
 from gunpla_fabrication_suite.plugins.kit_library.schemas import KitCreate
 from gunpla_fabrication_suite.plugins.kit_library.services.kit_service import KitService
+from gunpla_fabrication_suite.plugins.photography.repositories import PhotoRepository
+from gunpla_fabrication_suite.plugins.photography.services import PhotoService
+from gunpla_fabrication_suite.shared_ui import InspectorPanel
 
 
 @pytest.fixture
@@ -83,3 +91,46 @@ def work_session_service(database, event_bus):
 def journal_service(database):
     """A build journal service backed by the isolated test database."""
     return JournalService(JournalRepository(database))
+
+
+@pytest.fixture
+def photo_service(database, app_paths, event_bus):
+    """A Photography service backed by the isolated test database and media directories."""
+    return PhotoService(PhotoRepository(database), app_paths, event_bus)
+
+
+@pytest.fixture
+def jobs():
+    """A fresh background job manager."""
+    manager = BackgroundJobManager()
+    yield manager
+
+
+@pytest.fixture
+def navigator():
+    """A fresh page-navigation broadcaster."""
+    return Navigator()
+
+
+@pytest.fixture
+def settings_service(app_paths):
+    """A settings service backed by the isolated test app_paths."""
+    return SettingsService(app_paths.settings_file)
+
+
+@pytest.fixture
+def theme_manager(qapp, settings_service):
+    """A theme manager applying to the real, shared pytest-qt QApplication."""
+    return ThemeManager(qapp, settings_service)
+
+
+@pytest.fixture
+def layout_manager(settings_service):
+    """A fresh layout manager backed by the isolated test settings."""
+    return LayoutManager(settings_service)
+
+
+@pytest.fixture
+def inspector():
+    """A fresh shared Inspector panel, as threaded through PluginContext."""
+    return InspectorPanel()

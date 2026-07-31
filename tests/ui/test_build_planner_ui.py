@@ -9,6 +9,9 @@ from gunpla_fabrication_suite.plugins.build_planner.schemas import BuildProjectC
 from gunpla_fabrication_suite.plugins.build_planner.ui.build_detail_view import BuildDetailView
 from gunpla_fabrication_suite.plugins.build_planner.ui.build_list_view import BuildListView
 from gunpla_fabrication_suite.plugins.build_planner.ui.build_planner_page import BuildPlannerPage
+from gunpla_fabrication_suite.plugins.build_planner.ui.continue_building_widget import (
+    ContinueBuildingWidget,
+)
 from gunpla_fabrication_suite.plugins.build_planner.ui.new_build_dialog import NewBuildDialog
 from gunpla_fabrication_suite.plugins.build_planner.ui.stage_tree_widget import StageTreeWidget
 
@@ -89,19 +92,19 @@ def test_stage_tree_widget_add_and_remove_stage(qtbot, build_service, existing_k
 
 
 def test_build_list_view_shows_empty_state_with_no_builds(
-    qtbot, build_service, kit_service
+    qtbot, build_service, kit_service, layout_manager
 ) -> None:
-    view = BuildListView(build_service, kit_service, on_select=lambda _id: None)
+    view = BuildListView(build_service, kit_service, layout_manager, on_select=lambda _id: None)
     qtbot.addWidget(view)
 
     assert view._stack.currentWidget() is view._empty_state
 
 
 def test_build_list_view_shows_created_builds_in_table(
-    qtbot, build_service, kit_service, existing_kit
+    qtbot, build_service, kit_service, layout_manager, existing_kit
 ) -> None:
     _create_build(build_service, existing_kit, title="Gundam Build")
-    view = BuildListView(build_service, kit_service, on_select=lambda _id: None)
+    view = BuildListView(build_service, kit_service, layout_manager, on_select=lambda _id: None)
     qtbot.addWidget(view)
 
     assert view._stack.currentWidget() is view._table
@@ -110,10 +113,10 @@ def test_build_list_view_shows_created_builds_in_table(
 
 
 def test_build_list_view_kanban_toggle_shows_columns(
-    qtbot, build_service, kit_service, existing_kit
+    qtbot, build_service, kit_service, layout_manager, existing_kit
 ) -> None:
     _create_build(build_service, existing_kit)
-    view = BuildListView(build_service, kit_service, on_select=lambda _id: None)
+    view = BuildListView(build_service, kit_service, layout_manager, on_select=lambda _id: None)
     qtbot.addWidget(view)
 
     view._kanban_checkbox.setChecked(True)
@@ -122,11 +125,11 @@ def test_build_list_view_kanban_toggle_shows_columns(
 
 
 def test_build_list_view_selecting_row_invokes_callback(
-    qtbot, build_service, kit_service, existing_kit
+    qtbot, build_service, kit_service, layout_manager, existing_kit
 ) -> None:
     build = _create_build(build_service, existing_kit)
     selected = []
-    view = BuildListView(build_service, kit_service, on_select=selected.append)
+    view = BuildListView(build_service, kit_service, layout_manager, on_select=selected.append)
     qtbot.addWidget(view)
 
     view._on_table_row_activated(view._table.item(0, 0))
@@ -135,7 +138,15 @@ def test_build_list_view_selecting_row_invokes_callback(
 
 
 def test_build_detail_view_shows_title_and_progress(
-    qtbot, build_service, work_session_service, journal_service, kit_service, existing_kit
+    qtbot,
+    build_service,
+    work_session_service,
+    journal_service,
+    kit_service,
+    photo_service,
+    jobs,
+    layout_manager,
+    existing_kit,
 ) -> None:
     build = _create_build(build_service, existing_kit)
     view = BuildDetailView(
@@ -143,7 +154,10 @@ def test_build_detail_view_shows_title_and_progress(
         work_session_service=work_session_service,
         journal_service=journal_service,
         kit_service=kit_service,
+        photo_service=photo_service,
+        jobs=jobs,
         notifications=NotificationCenter(),
+        layout_manager=layout_manager,
         build_id=build.id,
         on_back=lambda: None,
     )
@@ -154,7 +168,15 @@ def test_build_detail_view_shows_title_and_progress(
 
 
 def test_build_detail_view_start_action_updates_status(
-    qtbot, build_service, work_session_service, journal_service, kit_service, existing_kit
+    qtbot,
+    build_service,
+    work_session_service,
+    journal_service,
+    kit_service,
+    photo_service,
+    jobs,
+    layout_manager,
+    existing_kit,
 ) -> None:
     build = _create_build(build_service, existing_kit)
     view = BuildDetailView(
@@ -162,7 +184,10 @@ def test_build_detail_view_start_action_updates_status(
         work_session_service=work_session_service,
         journal_service=journal_service,
         kit_service=kit_service,
+        photo_service=photo_service,
+        jobs=jobs,
         notifications=NotificationCenter(),
+        layout_manager=layout_manager,
         build_id=build.id,
         on_back=lambda: None,
     )
@@ -181,6 +206,9 @@ def test_build_detail_view_archive_calls_on_back(
     work_session_service,
     journal_service,
     kit_service,
+    photo_service,
+    jobs,
+    layout_manager,
     existing_kit,
 ) -> None:
     import gunpla_fabrication_suite.plugins.build_planner.ui.build_detail_view as detail_module
@@ -193,7 +221,10 @@ def test_build_detail_view_archive_calls_on_back(
         work_session_service=work_session_service,
         journal_service=journal_service,
         kit_service=kit_service,
+        photo_service=photo_service,
+        jobs=jobs,
         notifications=NotificationCenter(),
+        layout_manager=layout_manager,
         build_id=build.id,
         on_back=lambda: went_back.append(1),
     )
@@ -206,7 +237,15 @@ def test_build_detail_view_archive_calls_on_back(
 
 
 def test_build_planner_page_navigates_between_list_and_detail(
-    qtbot, build_service, work_session_service, journal_service, kit_service, existing_kit
+    qtbot,
+    build_service,
+    work_session_service,
+    journal_service,
+    kit_service,
+    photo_service,
+    jobs,
+    layout_manager,
+    existing_kit,
 ) -> None:
     build = _create_build(build_service, existing_kit)
     page = BuildPlannerPage(
@@ -214,7 +253,10 @@ def test_build_planner_page_navigates_between_list_and_detail(
         work_session_service=work_session_service,
         journal_service=journal_service,
         kit_service=kit_service,
+        photo_service=photo_service,
+        jobs=jobs,
         notifications=NotificationCenter(),
+        layout_manager=layout_manager,
     )
     qtbot.addWidget(page)
 
@@ -280,3 +322,47 @@ def test_journal_widget_refresh_twice_in_a_row_leaves_no_stale_widget(
     # merely scheduled for deletion — otherwise it stays visible, briefly
     # overlapping the new one, until the event loop gets around to it.
     assert first_empty_state.parent() is None
+
+
+def test_resume_navigates_to_the_build_planner_page_and_opens_the_build(
+    qtbot,
+    build_service,
+    work_session_service,
+    journal_service,
+    kit_service,
+    photo_service,
+    jobs,
+    navigator,
+    layout_manager,
+    existing_kit,
+) -> None:
+    """Regression test: clicking Resume must actually switch the shell to the
+    Build Planner page with that build open, not just prepare the page and
+    leave the user to find it themselves (see continue_building_widget.py)."""
+    build = _create_build(build_service, existing_kit)
+    build_service.start_build(build.id)
+
+    page = BuildPlannerPage(
+        build_service=build_service,
+        work_session_service=work_session_service,
+        journal_service=journal_service,
+        kit_service=kit_service,
+        photo_service=photo_service,
+        jobs=jobs,
+        notifications=NotificationCenter(),
+        layout_manager=layout_manager,
+    )
+    qtbot.addWidget(page)
+
+    navigated_to = []
+    navigator.navigate_requested.connect(navigated_to.append)
+
+    widget = ContinueBuildingWidget(build_service, kit_service, page, navigator)
+    qtbot.addWidget(widget)
+
+    widget._on_resume(page, navigator, build.id)
+
+    assert navigated_to == ["build_planner"]
+    assert page._detail_view is not None
+    assert page._detail_view._build_id == build.id
+    assert page._stack.currentWidget() is page._detail_view

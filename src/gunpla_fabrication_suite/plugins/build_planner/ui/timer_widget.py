@@ -20,7 +20,7 @@ from gunpla_fabrication_suite.plugins.build_planner.services.work_session_servic
     WorkSessionService,
 )
 from gunpla_fabrication_suite.plugins.build_planner.ui.session_dialogs import StopSessionDialog
-from gunpla_fabrication_suite.themes import PALETTE
+from gunpla_fabrication_suite.shared_ui import set_label_role
 
 
 def _format_duration(total_seconds: int) -> str:
@@ -51,7 +51,7 @@ class TimerWidget(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self._status_label = QLabel()
-        self._status_label.setStyleSheet(f"color: {PALETTE.text_secondary};")
+        set_label_role(self._status_label, "secondary")
         layout.addWidget(self._status_label)
 
         self._elapsed_label = QLabel("00:00:00")
