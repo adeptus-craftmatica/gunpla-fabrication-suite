@@ -94,8 +94,8 @@ app = BUNDLE(
     icon=None,
     bundle_identifier="com.adeptuscraftmatica.gfs",
     info_plist={
-        "CFBundleShortVersionString": "2.0.0",
-        "CFBundleVersion": "2.0.0",
+        "CFBundleShortVersionString": "3.0.0",
+        "CFBundleVersion": "3.0.0",
         "NSHumanReadableCopyright": "Copyright Adeptus Craftmatica",
     },
 )
