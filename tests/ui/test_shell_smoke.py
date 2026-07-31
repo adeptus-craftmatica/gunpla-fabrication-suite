@@ -160,3 +160,26 @@ def test_layout_can_be_switched_back_and_forth_repeatedly(shell: MainWindow, qtb
         layout_manager.set_layout(layout_id)
         qtbot.wait(10)  # let any deleteLater() from the switch actually run
         shell.navigate_to("dashboard")
+
+
+def test_plugin_manager_detail_card_does_not_pop_as_a_stray_window(
+    shell: MainWindow, qtbot
+) -> None:
+    """Regression: PluginManagerPage._rebuild_body() called self._detail_card.show()
+    unconditionally, even on layouts (Rail, the default) where the card is never
+    re-parented into the body — an unparented .show() renders as its own tiny
+    top-level window, which read as a random dialog popping up on first visit."""
+    from PySide6.QtWidgets import QApplication
+
+    from gunpla_fabrication_suite.core.layout import COMMAND_DECK, DIORAMA, RAIL, WORKBENCH
+
+    for layout_id in (RAIL, COMMAND_DECK, WORKBENCH, DIORAMA):
+        shell._layout_manager.set_layout(layout_id)
+        before = set(QApplication.topLevelWidgets())
+        shell.navigate_to("core.plugin_manager")
+        qtbot.wait(10)
+        stray = [
+            w for w in QApplication.topLevelWidgets() if w not in before and w.isVisible()
+        ]
+        assert not stray, f"layout={layout_id}: {stray}"
+        shell.navigate_to("dashboard")

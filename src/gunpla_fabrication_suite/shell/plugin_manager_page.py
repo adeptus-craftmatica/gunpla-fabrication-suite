@@ -236,7 +236,8 @@ class PluginManagerPage(QWidget):
         # under Command Deck) must be shown again explicitly or they render
         # as empty space. See build_detail_view.py for the same pattern.
         self._table.show()
-        self._detail_card.show()
+        if layout_id == COMMAND_DECK:
+            self._detail_card.show()
         self._update_detail_panel()
 
     def _selected_record(self) -> PluginRecord | None:
