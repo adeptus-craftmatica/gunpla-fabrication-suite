@@ -150,7 +150,7 @@ class MainWindow(QMainWindow):
                 page_id="core.backup_restore",
                 title="Backup & Restore",
                 factory=lambda: BackupRestorePage(
-                    self._paths, self._database, self._notifications
+                    self._paths, self._database, self._notifications, self._settings_service
                 ),
                 section="secondary",
                 order=850,

@@ -15,6 +15,7 @@ import traceback
 import qasync
 from PySide6.QtWidgets import QApplication, QMessageBox
 
+from gunpla_fabrication_suite.core.auto_backup import maybe_schedule_backup
 from gunpla_fabrication_suite.core.events import EventBus
 from gunpla_fabrication_suite.core.jobs import BackgroundJobManager
 from gunpla_fabrication_suite.core.layout import LayoutManager
@@ -124,6 +125,8 @@ def run_application(argv: list[str] | None = None) -> int:
 
     window.show()
     _logger.info("application_started")
+
+    maybe_schedule_backup(paths, settings_service, jobs, notifications)
 
     with loop:
         loop.run_forever()

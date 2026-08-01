@@ -28,11 +28,24 @@ class GeneralSettings(BaseModel):
     reduced_motion: bool = False
 
 
+class AutoBackupSettings(BaseModel):
+    """Automatic, periodic backup settings shown on the Backup & Restore page."""
+
+    enabled: bool = False
+    interval_days: int = 7
+    retention_count: int = 5
+    last_backup_at: str | None = None
+    """ISO 8601 UTC timestamp of the last successful automatic backup, or
+    ``None`` if one has never run — same string-timestamp convention as
+    ``BackupManifest.export_timestamp``."""
+
+
 class ApplicationSettings(BaseModel):
     """The root, persisted settings document."""
 
     schema_version: int = 1
     general: GeneralSettings = Field(default_factory=GeneralSettings)
+    auto_backup: AutoBackupSettings = Field(default_factory=AutoBackupSettings)
     disabled_plugins: list[str] = Field(default_factory=list)
     recent_items: list[str] = Field(default_factory=list)
     plugin_settings: dict[str, dict[str, Any]] = Field(default_factory=dict)

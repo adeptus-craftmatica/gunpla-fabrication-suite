@@ -39,7 +39,11 @@ def test_toast_card_width_is_fixed_before_layout_runs(qtbot) -> None:
 
 
 def test_long_message_toast_is_not_clipped(qtbot) -> None:
-    """The card's actual height must match its sizeHint — never compressed below it."""
+    """The card's fixed height must account for every wrapped line at its actual
+    (fixed) width — never compressed below it. Deliberately checked against
+    ``heightForWidth(_TOAST_WIDTH)``, not ``sizeHint()``: the latter reflects the
+    layout's unconstrained preferred size, which can report a wider (and thus
+    shorter, under-wrapped) size than the card's real fixed width."""
     long_message = (
         "This is an extremely long notification message designed specifically to "
         "force the toast card to wrap across several lines of text, to check that "
@@ -50,11 +54,7 @@ def test_long_message_toast_is_not_clipped(qtbot) -> None:
     qtbot.addWidget(card)
     card.show()
 
-    # A tall, roomy host ensures nothing external compresses the card, isolating
-    # whether the card's *own* layout computed a correct (non-clipped) height.
-    card.resize(card.sizeHint())
-
-    assert card.height() == card.sizeHint().height()
+    assert card.height() == card.heightForWidth(_TOAST_WIDTH)
     assert card.height() > 40  # a single line would be much shorter than this
 
 
@@ -81,4 +81,36 @@ def test_overlay_shows_notification_at_full_height(qtbot, qapp) -> None:
 
     card = overlay._stack.itemAt(0).widget()
     assert card is not None
-    qtbot.waitUntil(lambda: card.height() == card.sizeHint().height(), timeout=1000)
+    qtbot.waitUntil(lambda: card.height() == card.heightForWidth(_TOAST_WIDTH), timeout=1000)
+
+
+def test_stacked_toast_height_is_correct_immediately_not_eventually(qtbot) -> None:
+    """Regression: a card added to ToastOverlay's nested QVBoxLayout stack must get
+    its full, correct height on the very first layout pass. QVBoxLayout's weak
+    height-for-width support through a nested layout previously under-allocated
+    height for a multi-line-wrapped message (e.g. a long backup file path),
+    clipping the card's top and bottom — a bug the more lenient
+    ``test_overlay_shows_notification_at_full_height`` (which tolerates up to a
+    full second of eventual relayout via ``waitUntil``) didn't catch, since a
+    real toast is only visible briefly and the user sees the clipped state
+    before any deferred relayout could catch up.
+    """
+    host = QWidget()
+    host.resize(500, 800)
+    qtbot.addWidget(host)
+    host.show()
+
+    overlay = ToastOverlay(host)
+    notifications = NotificationCenter()
+    long_message = (
+        "Backup saved to /Users/jonathanstrachan/Library/Application Support/"
+        "GunplaFabricationSuite/backups/gunpla-backup-20260731T183000Z.zip."
+    )
+    overlay.show_notification(
+        notifications.post(long_message, severity=NotificationSeverity.SUCCESS)
+    )
+    qtbot.wait(10)  # one deterministic tick — not the generous polling above
+
+    card = overlay._stack.itemAt(0).widget()
+    assert card is not None
+    assert card.geometry().height() == card.heightForWidth(_TOAST_WIDTH)

@@ -8,10 +8,13 @@ from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QFileDialog,
+    QFormLayout,
     QLabel,
     QMessageBox,
     QPushButton,
+    QSpinBox,
     QVBoxLayout,
     QWidget,
 )
@@ -29,6 +32,7 @@ from gunpla_fabrication_suite.core.notifications import NotificationCenter, Noti
 from gunpla_fabrication_suite.core.paths import ApplicationPaths
 from gunpla_fabrication_suite.core.persistence import DatabaseService
 from gunpla_fabrication_suite.core.restart import restart_application
+from gunpla_fabrication_suite.core.settings import SettingsService
 from gunpla_fabrication_suite.shared_ui import (
     Card,
     PageHeader,
@@ -45,12 +49,14 @@ class BackupRestorePage(QWidget):
         paths: ApplicationPaths,
         database: DatabaseService,
         notifications: NotificationCenter,
+        settings_service: SettingsService,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self._paths = paths
         self._database = database
         self._notifications = notifications
+        self._settings_service = settings_service
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(24, 24, 24, 24)
@@ -75,6 +81,40 @@ class BackupRestorePage(QWidget):
         self._export_button.clicked.connect(self._on_export_clicked)
         export_card.add_widget(self._export_button)
         outer.addWidget(export_card)
+
+        auto_backup_card = Card("Automatic Backups")
+        auto_backup = settings_service.current.auto_backup
+
+        self._auto_backup_checkbox = QCheckBox("Enable automatic backups")
+        self._auto_backup_checkbox.setChecked(auto_backup.enabled)
+        self._auto_backup_checkbox.toggled.connect(self._on_auto_backup_toggled)
+        auto_backup_card.add_widget(self._auto_backup_checkbox)
+
+        form = QFormLayout()
+        self._interval_spin = QSpinBox()
+        self._interval_spin.setRange(1, 90)
+        self._interval_spin.setSuffix(" days")
+        self._interval_spin.setValue(auto_backup.interval_days)
+        self._interval_spin.valueChanged.connect(self._on_interval_changed)
+        form.addRow("Back up every", self._interval_spin)
+
+        self._retention_spin = QSpinBox()
+        self._retention_spin.setRange(1, 50)
+        self._retention_spin.setValue(auto_backup.retention_count)
+        self._retention_spin.valueChanged.connect(self._on_retention_changed)
+        form.addRow("Keep the last", self._retention_spin)
+        form_widget = QWidget()
+        form_widget.setLayout(form)
+        auto_backup_card.add_widget(form_widget)
+
+        last_run_text = (
+            f"Last automatic backup: {auto_backup.last_backup_at}"
+            if auto_backup.last_backup_at
+            else "Last automatic backup: never yet"
+        )
+        self._last_run_label = QLabel(last_run_text)
+        auto_backup_card.add_widget(self._last_run_label)
+        outer.addWidget(auto_backup_card)
 
         import_card = Card("Import Backup")
         import_label = QLabel(
@@ -121,6 +161,21 @@ class BackupRestorePage(QWidget):
             )
         finally:
             QApplication.restoreOverrideCursor()
+
+    def _on_auto_backup_toggled(self, checked: bool) -> None:
+        settings = self._settings_service.current
+        settings.auto_backup.enabled = checked
+        self._settings_service.save(settings)
+
+    def _on_interval_changed(self, value: int) -> None:
+        settings = self._settings_service.current
+        settings.auto_backup.interval_days = value
+        self._settings_service.save(settings)
+
+    def _on_retention_changed(self, value: int) -> None:
+        settings = self._settings_service.current
+        settings.auto_backup.retention_count = value
+        self._settings_service.save(settings)
 
     def _on_import_clicked(self) -> None:
         source_str, _ = QFileDialog.getOpenFileName(

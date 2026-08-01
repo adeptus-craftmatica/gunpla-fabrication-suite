@@ -26,6 +26,25 @@ def test_save_then_reload_round_trips_values(tmp_path) -> None:
     assert reloaded.current.general.theme == "dark"
 
 
+def test_auto_backup_settings_round_trip(tmp_path) -> None:
+    settings_file = tmp_path / "settings.json"
+    service = SettingsService(settings_file)
+
+    settings = service.current
+    settings.auto_backup.enabled = True
+    settings.auto_backup.interval_days = 3
+    settings.auto_backup.retention_count = 10
+    settings.auto_backup.last_backup_at = "2026-01-01T00:00:00+00:00"
+    service.save(settings)
+
+    reloaded = SettingsService(settings_file)
+
+    assert reloaded.current.auto_backup.enabled is True
+    assert reloaded.current.auto_backup.interval_days == 3
+    assert reloaded.current.auto_backup.retention_count == 10
+    assert reloaded.current.auto_backup.last_backup_at == "2026-01-01T00:00:00+00:00"
+
+
 def test_save_is_atomic_and_leaves_no_tmp_file(tmp_path) -> None:
     settings_file = tmp_path / "settings.json"
     service = SettingsService(settings_file)

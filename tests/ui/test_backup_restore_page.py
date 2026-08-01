@@ -16,8 +16,8 @@ def notifications() -> NotificationCenter:
 
 
 @pytest.fixture
-def page(qtbot, app_paths, database, notifications) -> BackupRestorePage:
-    widget = BackupRestorePage(app_paths, database, notifications)
+def page(qtbot, app_paths, database, notifications, settings_service) -> BackupRestorePage:
+    widget = BackupRestorePage(app_paths, database, notifications, settings_service)
     qtbot.addWidget(widget)
     return widget
 
@@ -85,3 +85,42 @@ def test_import_button_rejects_invalid_zip_before_confirmation(
     monkeypatch.setattr(backup_restore_page_module.QMessageBox, "critical", lambda *a, **k: None)
 
     qtbot.mouseClick(page._import_button, backup_restore_page_module.Qt.MouseButton.LeftButton)
+
+
+def test_enabling_auto_backup_checkbox_persists_via_settings(
+    page: BackupRestorePage, settings_service
+) -> None:
+    assert settings_service.current.auto_backup.enabled is False
+
+    page._auto_backup_checkbox.setChecked(True)
+
+    assert settings_service.current.auto_backup.enabled is True
+
+
+def test_changing_interval_spin_persists_via_settings(
+    page: BackupRestorePage, settings_service
+) -> None:
+    page._interval_spin.setValue(14)
+
+    assert settings_service.current.auto_backup.interval_days == 14
+
+
+def test_changing_retention_spin_persists_via_settings(
+    page: BackupRestorePage, settings_service
+) -> None:
+    page._retention_spin.setValue(10)
+
+    assert settings_service.current.auto_backup.retention_count == 10
+
+
+def test_last_run_label_reflects_settings_at_construction(
+    qtbot, app_paths, database, notifications, settings_service
+) -> None:
+    settings = settings_service.current
+    settings.auto_backup.last_backup_at = "2026-01-01T00:00:00+00:00"
+    settings_service.save(settings)
+
+    widget = BackupRestorePage(app_paths, database, notifications, settings_service)
+    qtbot.addWidget(widget)
+
+    assert "2026-01-01T00:00:00+00:00" in widget._last_run_label.text()

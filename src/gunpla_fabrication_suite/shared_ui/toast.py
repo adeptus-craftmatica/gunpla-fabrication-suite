@@ -63,6 +63,21 @@ class _ToastCard(QFrame):
         close_button.clicked.connect(lambda: on_dismiss(self))
         layout.addWidget(close_button)
 
+        # Fix the height too, so ToastOverlay._stack (a QVBoxLayout, which
+        # has weak height-for-width support through a nested layout) never
+        # has to negotiate it and under-allocate. Deliberately uses
+        # heightForWidth(_TOAST_WIDTH), NOT sizeHint().height(): plain
+        # sizeHint() on this QFrame reflects the layout's *unconstrained*
+        # preferred size — its reported width can come back wider than the
+        # fixed width above, in which case its height is wrong too (the
+        # word-wrapped label fits more text per notional line at that wider
+        # width, under-counting how many lines it actually wraps to once
+        # rendered at the true, narrower width) — for a short, single-line
+        # message the two happen to agree, which is how this was missed
+        # once already; only a longer, multi-line-wrapped message (e.g. a
+        # full backup file path) exposes the gap.
+        self.setFixedHeight(self.heightForWidth(_TOAST_WIDTH))
+
 
 class ToastOverlay(QWidget):
     """A transparent overlay, sized to its parent, stacking toast cards bottom-right."""
