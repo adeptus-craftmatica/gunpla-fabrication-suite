@@ -29,6 +29,7 @@ MODEL_MODULES: tuple[str, ...] = (
     "gunpla_fabrication_suite.plugins.photography.models.photo",
     "gunpla_fabrication_suite.plugins.photography.models.photo_relationship",
     "gunpla_fabrication_suite.plugins.supplies.models.supply",
+    "gunpla_fabrication_suite.plugins.wishlist.models.wishlist_item",
 )
 
 

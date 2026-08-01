@@ -1,0 +1,18 @@
+id = "com.adeptuscraftmatica.gfs.wishlist"
+name = "Wishlist"
+version = "1.0.0"
+api_version = "1"
+entry_point = "plugin:WishlistPlugin"
+description = "Kits, tools, paint, and parts you want to buy, with a one-click path to Kit Library once a kit is purchased."
+author = "Adeptus Craftmatica"
+
+dependencies = [
+    "com.adeptuscraftmatica.gfs.kit_library",
+]
+optional_dependencies = []
+
+permissions = [
+    "database.read",
+    "database.write",
+    "notifications.publish",
+]
