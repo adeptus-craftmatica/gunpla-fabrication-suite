@@ -15,6 +15,7 @@ import traceback
 import qasync
 from PySide6.QtWidgets import QApplication, QMessageBox
 
+from gunpla_fabrication_suite import __version__
 from gunpla_fabrication_suite.core.auto_backup import maybe_schedule_backup
 from gunpla_fabrication_suite.core.events import EventBus
 from gunpla_fabrication_suite.core.jobs import BackgroundJobManager
@@ -28,6 +29,7 @@ from gunpla_fabrication_suite.core.plugins import PluginManager
 from gunpla_fabrication_suite.core.services import ServiceContainer
 from gunpla_fabrication_suite.core.settings import SettingsService
 from gunpla_fabrication_suite.core.theming import ThemeManager
+from gunpla_fabrication_suite.core.update_check import maybe_check_for_update_on_startup
 from gunpla_fabrication_suite.plugin_sdk.registries import (
     CommandRegistry,
     DashboardWidgetRegistry,
@@ -127,6 +129,7 @@ def run_application(argv: list[str] | None = None) -> int:
     _logger.info("application_started")
 
     maybe_schedule_backup(paths, settings_service, jobs, notifications)
+    maybe_check_for_update_on_startup(settings_service, jobs, notifications, __version__)
 
     with loop:
         loop.run_forever()

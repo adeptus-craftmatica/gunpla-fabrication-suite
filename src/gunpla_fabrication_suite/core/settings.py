@@ -40,12 +40,25 @@ class AutoBackupSettings(BaseModel):
     ``BackupManifest.export_timestamp``."""
 
 
+class UpdateCheckSettings(BaseModel):
+    """Startup update-check settings shown on the About page."""
+
+    enabled: bool = True
+    last_checked_at: str | None = None
+    """ISO 8601 UTC timestamp of the last completed check, or ``None`` if one
+    has never run — same string-timestamp convention as ``AutoBackupSettings``."""
+    last_known_version: str | None = None
+    """The latest version seen on GitHub as of ``last_checked_at`` (e.g. "4.1.0"),
+    or ``None`` if a check has never successfully completed."""
+
+
 class ApplicationSettings(BaseModel):
     """The root, persisted settings document."""
 
     schema_version: int = 1
     general: GeneralSettings = Field(default_factory=GeneralSettings)
     auto_backup: AutoBackupSettings = Field(default_factory=AutoBackupSettings)
+    update_check: UpdateCheckSettings = Field(default_factory=UpdateCheckSettings)
     disabled_plugins: list[str] = Field(default_factory=list)
     recent_items: list[str] = Field(default_factory=list)
     plugin_settings: dict[str, dict[str, Any]] = Field(default_factory=dict)

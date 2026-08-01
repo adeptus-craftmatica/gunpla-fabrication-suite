@@ -39,6 +39,7 @@ from gunpla_fabrication_suite.plugin_sdk.registries import (
 )
 from gunpla_fabrication_suite.shared_ui import InspectorPanel
 from gunpla_fabrication_suite.shared_ui.toast import ToastOverlay
+from gunpla_fabrication_suite.shell.about_page import AboutPage
 from gunpla_fabrication_suite.shell.appearance_page import AppearancePage
 from gunpla_fabrication_suite.shell.backup_restore_page import BackupRestorePage
 from gunpla_fabrication_suite.shell.command_palette import CommandPaletteDialog
@@ -81,6 +82,7 @@ class MainWindow(QMainWindow):
         self._plugin_manager = plugin_manager
         self._database = database
         self._notifications = notifications
+        self._jobs = jobs
         self._theme_manager = theme_manager
         self._layout_manager = layout_manager
         self._paths = paths
@@ -168,6 +170,18 @@ class MainWindow(QMainWindow):
                 order=900,
             ),
         )
+        self._navigation.register(
+            _CORE_PLUGIN_ID,
+            NavigationPageContribution(
+                page_id="core.updates",
+                title="Updates",
+                factory=lambda: AboutPage(
+                    self._settings_service, self._jobs, self._notifications
+                ),
+                section="secondary",
+                order=950,
+            ),
+        )
 
     def _register_core_commands(self) -> None:
         self._commands.register(
@@ -192,6 +206,14 @@ class MainWindow(QMainWindow):
                 command_id="core.open_plugin_manager",
                 title="Open Plugin Manager",
                 callback=lambda: self.navigate_to("core.plugin_manager"),
+            ),
+        )
+        self._commands.register(
+            _CORE_PLUGIN_ID,
+            CommandContribution(
+                command_id="core.open_updates",
+                title="Open Updates",
+                callback=lambda: self.navigate_to("core.updates"),
             ),
         )
         self._commands.register(
@@ -239,6 +261,9 @@ class MainWindow(QMainWindow):
         diagnostics_action = QAction("&Diagnostics…", self)
         diagnostics_action.triggered.connect(self._show_diagnostics)
         help_menu.addAction(diagnostics_action)
+        check_updates_action = QAction("&Check for Updates…", self)
+        check_updates_action.triggered.connect(lambda: self.navigate_to("core.updates"))
+        help_menu.addAction(check_updates_action)
         about_action = QAction("&About", self)
         about_action.triggered.connect(self._show_about)
         help_menu.addAction(about_action)

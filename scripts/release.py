@@ -92,6 +92,13 @@ def ask_version() -> str:
         warn("Please use the format X.Y.Z  (e.g.  0.2.0)")
 
 
+def ask_release_note() -> str:
+    answer = input("  Add a note for this release? [y/N]: ").strip().lower()
+    if answer != "y":
+        return ""
+    return input("  Note: ").strip()
+
+
 def check_tag(tag: str) -> None:
     result = subprocess.run(["git", "rev-parse", tag], cwd=ROOT, capture_output=True)
     if result.returncode == 0:
@@ -304,8 +311,9 @@ def _check_staged_for_secrets() -> None:
             die("Aborted by user.")
 
 
-def commit_and_tag(version: str) -> str:
+def commit_and_tag(version: str, note: str = "") -> str:
     tag = f"v{version}"
+    commit_message = f"chore: release {tag}\n\n{note}" if note else f"chore: release {tag}"
 
     info("Staging changes...")
     # Stage only files already tracked by git plus the specific paths we
@@ -331,7 +339,7 @@ def commit_and_tag(version: str) -> str:
     status = run_output(["git", "diff", "--cached", "--name-only"])
     if status:
         info("Committing...")
-        run(["git", "commit", "-m", f"chore: release {tag}"])
+        run(["git", "commit", "-m", commit_message])
         success("Changes committed")
     else:
         info("Nothing new to commit - working tree already clean.")
@@ -395,6 +403,7 @@ def main() -> None:
 
     version = ask_version()
     tag = f"v{version}"
+    note = ask_release_note()
 
     print()
     info(f"Building release {tag}...")
@@ -407,7 +416,7 @@ def main() -> None:
     artifact_path = package(app_path)
 
     update_version(version)
-    commit_and_tag(version)
+    commit_and_tag(version, note)
     print_summary(version, artifact_path)
 
 
